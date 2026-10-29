@@ -31,7 +31,7 @@
     @if ($quiz->exists && isset($stats))
         <div class="kpis kpis-mini">
             <div class="card kpi"><div class="kpi-label">Questions</div><div class="kpi-value">{{ $quiz->questions->count() }}</div></div>
-            <div class="card kpi"><div class="kpi-label">Attempts</div><div class="kpi-value">{{ $stats['attempts'] }}</div><div class="kpi-note">{{ $stats['students'] }} students</div></div>
+            <a class="card kpi" href="{{ route('admin.results.index', ['quiz' => $quiz->id]) }}" title="See each student's result"><div class="kpi-label">Attempts</div><div class="kpi-value">{{ $stats['attempts'] }}</div><div class="kpi-note">{{ $stats['students'] }} students · see results →</div></a>
             <div class="card kpi"><div class="kpi-label">Average score</div><div class="kpi-value">{{ $stats['attempts'] ? $stats['average'].'%' : '—' }}</div></div>
             <div class="card kpi"><div class="kpi-label">Pass rate</div><div class="kpi-value">{{ $stats['pass_rate'] !== null ? $stats['pass_rate'].'%' : '—' }}</div></div>
         </div>

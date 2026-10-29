@@ -67,9 +67,9 @@ class QuestionController extends Controller
             'options.*.text' => ['nullable', 'string', 'max:1000'],
             'correct' => ['nullable'],
             'tf_answer' => ['nullable', Rule::in(['true', 'false'])],
-        ]);
+        ], $this->imageMessages(['image' => 'Picture']));
 
-        $options = $this->optionsFrom($request, $data);
+        $options = $this->optionsFrom($request, $data, $question);
 
         DB::transaction(function () use ($request, $quiz, $question, $data, $options) {
             $question->fill([
@@ -84,10 +84,16 @@ class QuestionController extends Controller
             $this->syncImage($request, $question, 'image', 'quiz');
             $question->save();
 
-            $question->options()->delete();
-            foreach ($options as $i => [$text, $correct]) {
-                $question->options()->create(['text' => $text, 'is_correct' => $correct, 'position' => $i + 1]);
+            // Update the answers in place: students' past answers point at their ids, so
+            // deleting and re-adding them would leave every earlier attempt "not answered".
+            $existing = $question->options()->get()->keyBy('id');
+            $kept = [];
+            foreach ($options as $i => [$key, $text, $correct]) {
+                $option = $existing->get((int) $key) ?? $question->options()->make();
+                $option->fill(['text' => $text, 'is_correct' => $correct, 'position' => $i + 1])->save();
+                $kept[] = $option->id;
             }
+            $question->options()->whereKeyNot($kept)->delete();
         });
 
         return $request->boolean('add_another')
@@ -95,16 +101,27 @@ class QuestionController extends Controller
             : redirect()->route('admin.quizzes.edit', $quiz)->with('status', 'Question saved.');
     }
 
-    /** @return list<array{0: string, 1: bool}> */
-    private function optionsFrom(Request $request, array $data): array
+    /**
+     * The answers from the form as [key, text, correct]. A key that is the id of one of the question's
+     * saved answers updates that answer; any other key adds a new one.
+     *
+     * @return list<array{0: int|string, 1: string, 2: bool}>
+     */
+    private function optionsFrom(Request $request, array $data, QuizQuestion $question): array
     {
         if ($data['type'] === 'true_false') {
             $answer = $data['tf_answer'] ?? null;
             if (! $answer) {
                 throw ValidationException::withMessages(['tf_answer' => 'Choose whether the statement is true or false.']);
             }
+            // Keep the saved "true" / "false" answers (and their wording, e.g. ពិត / មិនពិត) when there are two.
+            $saved = $question->exists && $question->type === 'true_false' ? $question->options()->orderBy('position')->get() : collect();
+            [$yes, $no] = $saved->count() === 2 ? $saved->all() : [null, null];
 
-            return [[__('account.true'), $answer === 'true'], [__('account.false'), $answer === 'false']];
+            return [
+                [$yes?->id ?? 'true', $yes?->text ?? __('account.true'), $answer === 'true'],
+                [$no?->id ?? 'false', $no?->text ?? __('account.false'), $answer === 'false'],
+            ];
         }
 
         $correct = array_map('strval', (array) ($data['correct'] ?? []));
@@ -112,11 +129,11 @@ class QuestionController extends Controller
         foreach ($data['options'] ?? [] as $key => $option) {
             $text = trim((string) ($option['text'] ?? ''));
             if ($text !== '') {
-                $options[] = [$text, in_array((string) $key, $correct, true)];
+                $options[] = [$key, $text, in_array((string) $key, $correct, true)];
             }
         }
 
-        $correctCount = count(array_filter($options, fn ($o) => $o[1]));
+        $correctCount = count(array_filter($options, fn ($o) => $o[2]));
         $error = match (true) {
             count($options) < 2 => 'Add at least two answers.',
             $correctCount === 0 => 'Mark the correct answer.',

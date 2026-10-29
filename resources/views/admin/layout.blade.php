@@ -19,6 +19,8 @@
         ['C', 'Sales', [
             ['Orders', route('admin.orders.index'), request()->routeIs('admin.orders.*'), 'courses', $navCounts['orders_review'] ? ['badge', $navCounts['orders_review']] : ['count', $navCounts['orders_paid']]],
             ['Students', route('admin.students.index'), request()->routeIs('admin.students.*'), 'users', ['count', $navCounts['students']]],
+            ['Exam results', route('admin.results.index'), request()->routeIs('admin.results.*'), 'check', null],
+            ['Re-exam requests', route('admin.retake-requests.index'), request()->routeIs('admin.retake-requests.*'), 'clock', ['badge', $navCounts['retakes']]],
         ]],
         ['D', 'Showcase', [
             ['Testimonials', route('admin.testimonials.index'), request()->routeIs('admin.testimonials.*'), 'quote', ['count', $navCounts['testimonials']]],
@@ -38,6 +40,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- PHP's post_max_size: one save with more files than this is thrown away whole (admin.js checks first). 0 = no limit. --}}
+    <meta name="post-max-bytes" content="{{ is_finite($postMax = \App\Support\Media::postMaxBytes()) ? (int) $postMax : 0 }}">
     <title>@yield('title', 'Dashboard') · {{ $siteName }} Admin</title>
     @if (setting('favicon'))
         <link rel="icon" href="{{ media_url(setting('favicon')) }}">

@@ -18,7 +18,8 @@
                                 @if ($meta['type'] === 'socials')
                                     @include('admin.fields.socials', ['label' => $meta['label']])
                                 @elseif ($meta['type'] === 'image')
-                                    @include('admin.fields.image', ['name' => "uploads[$key]", 'remove' => "remove[$key]", 'label' => $meta['label'], 'value' => $values[$key] ?? null])
+                                    @include('admin.fields.image', ['name' => "uploads[$key]", 'remove' => "remove[$key]", 'label' => $meta['label'], 'value' => $values[$key] ?? null,
+                            'formats' => 'JPG, PNG, WebP, GIF, SVG or ICO', 'accept' => \App\Support\Media::accept([...\App\Support\Media::IMAGE_TYPES, 'ico'])])
                                 @elseif ($meta['type'] === 'textarea')
                                     @include('admin.fields.textarea', ['name' => "settings[$key]", 'label' => $meta['label'], 'value' => $values[$key] ?? null, 'rows' => 3])
                                 @else

@@ -76,7 +76,7 @@ class ArticleController extends Controller
             'body' => ['nullable', 'string'],
             'published_at' => ['nullable', 'date'],
             'image' => $this->imageRule(),
-        ]);
+        ], $this->imageMessages(['image' => 'Featured image']));
         unset($data['image']);
 
         $article->fill($data);

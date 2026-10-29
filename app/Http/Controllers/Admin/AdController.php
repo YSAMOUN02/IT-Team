@@ -14,6 +14,11 @@ use Illuminate\Validation\Rule;
 /** Admin > Ads: per placement your own banner image or Google AdSense, plus the AdSense account. */
 class AdController extends Controller
 {
+    use HandlesImageUploads;
+
+    /** Banners are measured to lay out the ad spot, so SVG is left out. */
+    public const BANNER_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
     public function edit()
     {
         return view('admin.ads', [
@@ -40,7 +45,7 @@ class AdController extends Controller
             'ads_publisher_id' => ['nullable', 'regex:/^(ca-)?pub-\d{10,20}$/'],
             'ads_txt_extra' => ['nullable', 'string', 'max:2000'],
         ];
-        $image = ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp', 'max:8192'];
+        $image = $this->imageRule(self::BANNER_TYPES);
         foreach ($placements as $key) {
             $rules["ad_{$key}_type"] = ['nullable', Rule::in(array_keys(Ads::TYPES))];
             $rules["ad_{$key}_image"] = $image;
@@ -54,11 +59,14 @@ class AdController extends Controller
         $messages = [
             'ads_publisher_id.regex' => 'The publisher ID looks like ca-pub-1234567890123456.',
             'regex' => 'An ad slot ID is the number from AdSense, e.g. 1234567890.',
-            'mimes' => 'Use a JPG, PNG, WebP or GIF picture.',
         ];
+        $labels = [];
         foreach ($placements as $key) {
             $messages["ad_{$key}_link.regex"] = 'Use a page of this site (/courses/pivot-table) or a full web address (https://t.me/…).';
+            $labels["ad_{$key}_image"] = config("ads.$key.label").' › Banner image';
+            $labels["ad_{$key}_image_phone"] = config("ads.$key.label").' › Phone image';
         }
+        $messages += $this->imageMessages($labels, self::BANNER_TYPES);
         $data = $request->validate($rules, $messages);
 
         $current = Setting::allCached();
@@ -96,7 +104,8 @@ class AdController extends Controller
      */
     private function storeBanner(UploadedFile $file, string $placement): array
     {
-        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension());
+        // The type the file really is, not the name it came with.
+        $extension = $file->guessExtension() ?: strtolower($file->getClientOriginalExtension());
         $bytes = Media::shrink((string) file_get_contents($file->getRealPath()), $extension, 2400);
         $path = Media::put($bytes, 'promos', 'banner-'.str_replace('_', '-', $placement), $extension);
         $size = @getimagesizefromstring($bytes);

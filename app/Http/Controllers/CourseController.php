@@ -35,6 +35,9 @@ class CourseController extends Controller
         if (! $user) {
             return $this->askToSignIn($request, $course);
         }
+        if ($user->courseAccessOff($course)) {
+            return redirect()->route('courses.show', $course->slug)->with('checkout_notice', __('account.access_off'));
+        }
         if (! $user->canAccessCourse($course)) {
             Enrollment::grant($user, $course, null, 'free');
         }

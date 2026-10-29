@@ -15,14 +15,14 @@ class UploadController extends Controller
     public function __invoke(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp', 'max:8192'],
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp', 'max:'.Media::uploadMaxKb()],
+        ], [
+            'file.max' => 'The picture is bigger than '.Media::sizeLabel(Media::uploadMaxKb()).'.',
+            'file.mimes' => 'Use a JPG, PNG, WebP or GIF picture.',
         ]);
 
-        $file = $request->file('file');
-        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension());
-        $path = $extension === 'gif'
-            ? Media::store($file, 'editor') // may be animated
-            : Media::put(Media::shrink($file->get(), $extension), 'editor', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) ?: 'screenshot', $extension);
+        // Saved under the type it really is; GIFs are left as they are (they may be animated).
+        $path = Media::storeImage($request->file('file'), 'editor', 1600);
 
         return response()->json(['location' => Media::url($path)]);
     }

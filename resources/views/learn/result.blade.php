@@ -12,7 +12,8 @@
     $rightCount = $rows->where('right', true)->count();
     $unanswered = $rows->filter(fn ($row) => ! $row['chosen'])->count();
     $wrongCount = $rows->count() - $rightCount - $unanswered;
-    $seconds = $attempt->started_at && $attempt->submitted_at ? max(0, (int) $attempt->started_at->diffInSeconds($attempt->submitted_at)) : null;
+    // Attempts saved before the 2026_11_01_000002 fix lost their real start time (it equals the submit time): no time shown.
+    $seconds = $attempt->started_at && $attempt->submitted_at?->gt($attempt->started_at) ? (int) $attempt->started_at->diffInSeconds($attempt->submitted_at) : null;
     $practice = $quiz->isPractice();
     $celebrate = $attempt->passed && ! $practice;
     $courseDone = $progress->complete && $certificateCode && in_array($quiz->type, ['final', 'quiz'], true);
@@ -67,6 +68,8 @@
                             @csrf
                             <button class="btn btn-outline">{{ __('account.retake') }}</button>
                         </form>
+                    @elseif ($canRequestRetake)
+                        <a class="btn btn-outline" href="{{ route('learn.quiz', [$course->slug, $quiz->slug]) }}#retake">{{ __('account.retake_ask') }}</a>
                     @endif
                     @if ($next)
                         <a class="btn btn-ghost" href="{{ route('learn.course', $course->slug) }}">{{ __('account.back_to_course') }}</a>

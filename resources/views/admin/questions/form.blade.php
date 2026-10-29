@@ -3,7 +3,8 @@
 @php
     $type = old('type', $question->type);
     $rows = old('options') ? collect(old('options'))->map(fn ($o, $k) => ['key' => $k, 'text' => $o['text'] ?? '', 'correct' => in_array((string) $k, array_map('strval', (array) old('correct', [])), true)])->values()
-        : ($options->isNotEmpty() ? $options->map(fn ($o, $i) => ['key' => $i, 'text' => $o->text, 'correct' => $o->is_correct])->values()
+        // Saved answers are keyed by their id, so saving updates them in place (students' past answers point at these ids).
+        : ($options->isNotEmpty() ? $options->map(fn ($o) => ['key' => $o->id, 'text' => $o->text, 'correct' => $o->is_correct])->values()
         : collect(range(0, 3))->map(fn ($i) => ['key' => $i, 'text' => '', 'correct' => false]));
     $tf = old('tf_answer', $question->exists && $type === 'true_false' ? ($options->first()?->is_correct ? 'true' : 'false') : null);
 @endphp

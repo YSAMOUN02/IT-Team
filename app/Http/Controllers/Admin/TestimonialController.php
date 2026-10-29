@@ -53,7 +53,7 @@ class TestimonialController extends Controller
             'rating' => ['required', 'integer', 'between:1,5'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'photo' => $this->imageRule(),
-        ]);
+        ], $this->imageMessages(['photo' => 'Photo']));
         unset($data['photo']);
 
         $testimonial->fill($data);

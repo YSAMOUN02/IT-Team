@@ -58,8 +58,14 @@
                                     <label class="check"><input type="checkbox" name="remove_video" value="1"> Remove</label>
                                 </div>
                             @endif
-                            <input type="file" name="video" accept="video/mp4,video/webm,video/quicktime">
-                            <span class="help">Uploaded videos play only for students with access. Large files need a matching PHP upload limit.</span>
+                            @php($videoMaxKb = \App\Support\Media::uploadMaxKb(\App\Http\Controllers\Admin\LessonController::VIDEO_MAX_KB))
+                            <input type="file" name="video" accept="video/mp4,video/webm,video/quicktime" data-max-kb="{{ $videoMaxKb }}">
+                            @error('video')<span class="error-text">{{ $message }}</span>@enderror
+                            <span class="help">MP4, WebM or MOV, up to {{ \App\Support\Media::sizeLabel($videoMaxKb) }} on this server. Uploaded videos play only for students with access.
+                                @if ($videoMaxKb < \App\Http\Controllers\Admin\LessonController::VIDEO_MAX_KB)
+                                    For longer videos use a YouTube / Vimeo link above, or raise <code>upload_max_filesize</code> and <code>post_max_size</code> in php.ini.
+                                @endif
+                            </span>
                         </div>
                     </div>
                 </section>
@@ -105,10 +111,11 @@
                                         <label class="check"><input type="checkbox" name="remove_{{ $input }}" value="1"> Remove</label>
                                     </div>
                                 @endif
-                                <input type="file" name="{{ $input }}" accept=".xlsx,.xls,.xlsm,.csv,.pdf,.docx,.pptx,.zip">
+                                <input type="file" name="{{ $input }}" accept=".xlsx,.xls,.xlsm,.csv,.pdf,.docx,.pptx,.zip" data-max-kb="{{ \App\Support\Media::uploadMaxKb(\App\Http\Controllers\Admin\LessonController::FILE_MAX_KB) }}">
+                                @error($input)<span class="error-text">{{ $message }}</span>@enderror
                             </div>
                         @endforeach
-                        <span class="help">Excel, CSV, PDF, Word, PowerPoint or ZIP, up to 50 MB. The solution is shown only to students who bought the course.</span>
+                        <span class="help">Excel, CSV, PDF, Word, PowerPoint or ZIP, up to {{ \App\Support\Media::sizeLabel(\App\Support\Media::uploadMaxKb(\App\Http\Controllers\Admin\LessonController::FILE_MAX_KB)) }}. The solution is shown only to students who bought the course.</span>
                     </div>
                 </section>
             </div>

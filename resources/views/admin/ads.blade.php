@@ -57,8 +57,8 @@
 
                             <div class="ad-own">
                                 <div class="cols-2">
-                                    @include('admin.fields.image', ['name' => "ad_{$key}_image", 'remove' => "remove_ad_{$key}_image", 'label' => 'Banner image', 'value' => $values["ad_{$key}_image"] ?? null, 'formats' => 'JPG, PNG, WebP or GIF', 'help' => "Best at {$placement['size']}. Animated GIFs work too."])
-                                    @include('admin.fields.image', ['name' => "ad_{$key}_image_phone", 'remove' => "remove_ad_{$key}_image_phone", 'label' => 'Phone image (optional)', 'value' => $values["ad_{$key}_image_phone"] ?? null, 'formats' => 'JPG, PNG, WebP or GIF', 'help' => 'Shown on phones instead, about 600 × 300 px. Leave empty and phones get the banner.'])
+                                    @include('admin.fields.image', ['name' => "ad_{$key}_image", 'remove' => "remove_ad_{$key}_image", 'label' => 'Banner image', 'value' => $values["ad_{$key}_image"] ?? null, 'formats' => 'JPG, PNG, WebP or GIF', 'accept' => \App\Support\Media::accept(\App\Http\Controllers\Admin\AdController::BANNER_TYPES), 'help' => "Best at {$placement['size']}. Animated GIFs work too."])
+                                    @include('admin.fields.image', ['name' => "ad_{$key}_image_phone", 'remove' => "remove_ad_{$key}_image_phone", 'label' => 'Phone image (optional)', 'value' => $values["ad_{$key}_image_phone"] ?? null, 'formats' => 'JPG, PNG, WebP or GIF', 'accept' => \App\Support\Media::accept(\App\Http\Controllers\Admin\AdController::BANNER_TYPES), 'help' => 'Shown on phones instead, about 600 × 300 px. Leave empty and phones get the banner.'])
                                 </div>
                                 <div class="cols-2">
                                     @include('admin.fields.input', ['name' => "ad_{$key}_link", 'label' => 'Link when clicked', 'value' => $values["ad_{$key}_link"] ?? '', 'placeholder' => '/courses/pivot-table', 'help' => 'A page of this site, or a full address like https://t.me/… Other websites open in a new tab. Empty: no link.'])

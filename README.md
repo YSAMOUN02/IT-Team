@@ -12,7 +12,7 @@ and in the "Latest news" block on the home page. Dates use Phnom Penh time
 
 ```bash
 composer install
-cp .env.example .env          # then set ADMIN_EMAIL / ADMIN_PASSWORD
+cp .env.example .env          # then set ADMIN_EMAIL / ADMIN_PASSWORD (APP_LOCALE=km: the site is in Khmer)
 php artisan key:generate
 php artisan migrate --seed    # creates the admin user and empty pages
 php artisan storage:link
@@ -64,10 +64,32 @@ fills the database:
   and *Final exam* (timed, limited attempts). Lessons/tests can be free previews.
 - **Completion**: every lesson done + every module quiz and final exam passed →
   a printable certificate with a public verification link (`/certificates/{code}`).
+  Admin → Students → *Give certificate* issues one by hand (e.g. a class at the
+  office, any date up to today); a student without the course gets the certificate
+  only, not the course. *Take back* makes the code stop working.
+- **Exam results**: Admin → Exam results lists every test students took (score,
+  passed or not, time taken, try 2 of 3, or still not submitted), with filters for
+  student, course, test type and result. Open one to see each answer next to the
+  right one. Each student's page shows their latest tests too.
+  Admin → Courses → a course → *Results* shows the whole class at once: one row per
+  student, one column per module quiz / mock / final (best score, green = passed,
+  red = not yet, number of tries), filters *Learning / Completed / Needs to retake /
+  Not started / Access ended*, and *Download for Excel*.
+- **Re-exam requests**: a student who used every try at a test (its *Max attempts*)
+  without passing can *Ask for another try* with a message. Admin → Re-exam requests
+  (red count in the menu) approves with 1–3 more tries or declines, with a note the
+  student sees on the test page. An attempt's page also has *Give more tries*.
+  There is no separate teacher role: any admin can answer.
 - **Students** register at `/register`, buy at `/courses/{slug}/checkout`, learn
   at `/my/courses`. Admin → Students can also give access by hand (cash payment).
+  The Students list shows each student's courses: green = can open it now,
+  red = turned off, grey = ended.
 - Sample curriculum: `php artisan db:seed --class=SampleCurriculumSeeder`
   (only adds to a course that has no curriculum yet).
+- Test data: `php artisan db:seed --class=DemoDataSeeder`, then
+  `--class=RandomStudentsSeeder` for 20 random students and 3 more courses (run it
+  again for more). Test students sign in with `demo1234`. `php artisan demo:clear`
+  removes all test data before going live.
 - **Pivot Table & PivotChart** (a complete course): built from the Word manual and
   practice workbook in `example/` with
   `php artisan db:seed --class=PivotTableCourseSeeder`: 7 modules, 19 lessons
@@ -76,6 +98,14 @@ fills the database:
   import again). `App\Support\DocxReader` does the Word → lesson HTML part.
 - Lesson videos and practice files are stored privately (`storage/app/private`)
   and served only to students with access.
+- **Upload limits**: PHP's `upload_max_filesize` and `post_max_size` (XAMPP: 40M)
+  cap every upload. Lesson videos (up to 1 GB) and workbooks (50 MB) are lowered to
+  that, and the lesson form shows the real limit. For long videos use a YouTube /
+  Vimeo link, or raise both values in `php.ini` (e.g. `1100M`) and restart.
+  Every picture field takes up to 20 MB (or less, if PHP takes less), is checked in
+  the browser before saving, and is saved upright, scaled down to 2400 px and under
+  the type it really is. A save bigger than `post_max_size` is stopped in the
+  browser; if it still gets through, the 413 page says what happened.
 
 ### Writing lessons (the editor)
 
@@ -126,6 +156,10 @@ in with Google. Students who joined with Google can set a password later in
 - **Shared accounts**: a student can be signed in on 2 devices at once (Admin →
   Settings → Student accounts; 0 = no limit). Signing in on one more device signs
   out the oldest. Admin → Students → *Sign out everywhere* clears them all.
+- **Turning off**: Admin → Students → a student → *Turn off* on one course (progress
+  and dates are kept; *Turn on* or *Give access* undoes it, paying or enrolling
+  again does not), or *Turn account off* (signed out at once, cannot sign in or
+  open any course until turned on). *Remove* deletes the access instead.
 - Paid pages are sent with `Cache-Control: no-store`, so Back after signing out
   does not show them. Videos show the student's email as a moving watermark.
 - Lesson screenshots live in public storage under random names: hard to guess,

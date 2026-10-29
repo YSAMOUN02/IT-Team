@@ -29,7 +29,23 @@ class QuizController extends Controller
             'attempts' => $quiz->attempts()->where('user_id', $user->id)->whereNotNull('submitted_at')->latest('submitted_at')->get(),
             'open' => $quiz->attempts()->where('user_id', $user->id)->whereNull('submitted_at')->latest()->first(),
             'attemptsLeft' => $quiz->attemptsLeft($user),
+            'retake' => $quiz->retakeRequests()->where('user_id', $user->id)->latest()->latest('id')->first(),
+            'canRequestRetake' => $quiz->canRequestRetake($user),
         ]);
+    }
+
+    /** Out of tries without passing: ask the teacher for another try (Admin > Re-exam requests). */
+    public function requestRetake(Request $request, Course $course, Quiz $quiz)
+    {
+        $this->authorizeQuiz($request, $course, $quiz);
+        $data = $request->validate(['message' => ['nullable', 'string', 'max:1000']]);
+
+        if (! $quiz->canRequestRetake($request->user())) {
+            return redirect()->route('learn.quiz', [$course->slug, $quiz->slug])->with('status', __('account.retake_not_allowed'));
+        }
+        $quiz->retakeRequests()->create(['user_id' => $request->user()->id, 'message' => filled($data['message'] ?? null) ? trim($data['message']) : null]);
+
+        return redirect()->route('learn.quiz', [$course->slug, $quiz->slug])->with('status', __('account.retake_sent'));
     }
 
     public function start(Request $request, Course $course, Quiz $quiz)
@@ -113,6 +129,7 @@ class QuizController extends Controller
             'questions' => $attempt->orderedQuestions(),
             'progress' => $progress,
             'attemptsLeft' => $quiz->attemptsLeft($request->user()),
+            'canRequestRetake' => $quiz->canRequestRetake($request->user()),
             'next' => $attempt->passed || $quiz->isPractice() ? $progress->itemAfter($quiz) : null,
             'certificateCode' => $request->user()->enrollments()->where('course_id', $course->id)->value('certificate_code'),
         ]);

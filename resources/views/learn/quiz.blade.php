@@ -32,12 +32,20 @@
             </p>
         @endif
 
+        @if ($retake?->status === 'approved' && $attemptsLeft)
+            <div class="alert alert-success">
+                {{ trans_choice('account.retake_approved', $retake->extra_attempts, ['count' => $retake->extra_attempts]) }}
+                @if ($retake->reply)<br><strong>{{ __('account.teacher_note') }}:</strong> {{ $retake->reply }}@endif
+            </div>
+        @endif
+
         @if ($quiz->questions_count === 0)
             <p class="muted">—</p>
         @elseif ($open && ! $open->isOverdue())
             <a class="btn btn-primary btn-lg" href="{{ route('learn.attempt', [$course->slug, $quiz->slug, $open]) }}">{{ __('account.resume') }} →</a>
         @elseif ($attemptsLeft === 0)
             <p class="alert alert-info">{{ __('account.no_attempts_left') }}</p>
+            @include('learn._retake-request')
         @else
             <form method="post" action="{{ route('learn.quiz.start', [$course->slug, $quiz->slug]) }}">
                 @csrf

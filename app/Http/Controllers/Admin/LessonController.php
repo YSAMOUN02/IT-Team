@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseLesson;
+use App\Support\Media;
 use App\Support\Slug;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -23,6 +24,11 @@ class LessonController extends Controller
         'practice' => ['attachment_path', 'attachment_name'],
         'solution' => ['solution_path', 'solution_name'],
     ];
+
+    /** The most the app takes; Media::uploadMaxKb() lowers it to what PHP on this server takes. */
+    public const VIDEO_MAX_KB = 1048576; // 1 GB
+
+    public const FILE_MAX_KB = 51200; // 50 MB
 
     public function create(Request $request, Course $course)
     {
@@ -72,9 +78,15 @@ class LessonController extends Controller
             'duration' => ['nullable', 'string', 'max:20'],
             'video_url' => ['nullable', 'url', 'max:500'],
             'body' => ['nullable', 'string'],
-            'video' => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/quicktime', 'max:1048576'],
-            'practice' => ['nullable', 'file', 'mimes:xlsx,xls,xlsm,csv,pdf,docx,pptx,zip', 'max:51200'],
-            'solution' => ['nullable', 'file', 'mimes:xlsx,xls,xlsm,csv,pdf,docx,pptx,zip', 'max:51200'],
+            'video' => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/quicktime', 'max:'.Media::uploadMaxKb(self::VIDEO_MAX_KB)],
+            'practice' => ['nullable', 'file', 'mimes:xlsx,xls,xlsm,csv,pdf,docx,pptx,zip', 'max:'.Media::uploadMaxKb(self::FILE_MAX_KB)],
+            'solution' => ['nullable', 'file', 'mimes:xlsx,xls,xlsm,csv,pdf,docx,pptx,zip', 'max:'.Media::uploadMaxKb(self::FILE_MAX_KB)],
+        ], [
+            'video.max' => 'The video is bigger than '.Media::sizeLabel(Media::uploadMaxKb(self::VIDEO_MAX_KB)).', the most this server takes. Use a YouTube / Vimeo link instead, or raise PHP’s upload limit.',
+            'video.uploaded' => 'The video did not arrive. It may be bigger than this server takes ('.Media::sizeLabel(Media::uploadMaxKb(self::VIDEO_MAX_KB)).').',
+            'video.mimetypes' => 'Use an MP4, WebM or MOV video.',
+            'practice.max' => 'The practice workbook is bigger than '.Media::sizeLabel(Media::uploadMaxKb(self::FILE_MAX_KB)).'.',
+            'solution.max' => 'The solution file is bigger than '.Media::sizeLabel(Media::uploadMaxKb(self::FILE_MAX_KB)).'.',
         ]);
 
         $moduleChanged = $lesson->exists && $lesson->course_module_id != ($data['course_module_id'] ?? null);

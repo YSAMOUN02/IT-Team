@@ -8,11 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
+/** Admin accounts only. Students (role "student") are managed under Admin > Students. */
 class UserController extends Controller
 {
     public function index()
     {
-        return view('admin.users.index', ['users' => User::orderBy('name')->get()]);
+        return view('admin.users.index', ['users' => User::where('role', 'admin')->orderBy('name')->get()]);
     }
 
     public function create()
@@ -22,21 +23,30 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        return $this->save($request, new User);
+        // Without this the column default makes the new account a student, who cannot open the admin.
+        $user = new User;
+        $user->role = 'admin';
+
+        return $this->save($request, $user);
     }
 
     public function edit(User $user)
     {
+        abort_unless($user->isAdmin(), 404);
+
         return view('admin.users.form', compact('user'));
     }
 
     public function update(Request $request, User $user)
     {
+        abort_unless($user->isAdmin(), 404);
+
         return $this->save($request, $user);
     }
 
     public function destroy(Request $request, User $user)
     {
+        abort_unless($user->isAdmin(), 404);
         if ($user->is($request->user())) {
             return back()->withErrors(['user' => 'You cannot delete your own account.']);
         }

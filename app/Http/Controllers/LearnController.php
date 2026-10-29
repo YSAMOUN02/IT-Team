@@ -119,13 +119,15 @@ class LearnController extends Controller
     private function requireAccess(Request $request, Course $course): void
     {
         if (! $request->user()->canAccessCourse($course)) {
-            abort(redirect()->route('courses.show', $course->slug)->with('checkout_notice', __('account.need_access')));
+            abort($this->locked($request, $course));
         }
     }
 
     private function locked(Request $request, Course $course)
     {
-        return redirect()->route('courses.show', $course->slug)->with('checkout_notice', __('account.need_access'));
+        $notice = $request->user()?->courseAccessOff($course) ? 'account.access_off' : 'account.need_access';
+
+        return redirect()->route('courses.show', $course->slug)->with('checkout_notice', __($notice));
     }
 
     /** Lessons and quizzes in course order. */

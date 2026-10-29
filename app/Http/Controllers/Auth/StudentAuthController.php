@@ -24,7 +24,13 @@ class StudentAuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attemptWhen($credentials, fn (User $user) => ! $user->isDisabled(), $request->boolean('remember'))) {
+            // Right password, but an admin turned the account off (said only once the password is right).
+            $user = Auth::getLastAttempted();
+            if ($user?->isDisabled() && Auth::getProvider()->validateCredentials($user, $credentials)) {
+                throw ValidationException::withMessages(['email' => __('account.account_disabled')]);
+            }
+
             // Signed up with Google and never set a password: point them at the Google button.
             $googleOnly = GoogleAuthController::enabled()
                 && User::where('email', $credentials['email'])->whereNull('password')->whereNotNull('google_id')->exists();

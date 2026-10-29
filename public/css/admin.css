@@ -296,6 +296,52 @@ table.data { width: 100%; border-collapse: separate; border-spacing: 0; }
 .status-on { background: var(--good-bg); color: var(--good); }
 .status-off { background: #f0f1f5; color: #6b7189; }
 .status-sched { background: var(--warn-bg); color: var(--warn); }
+.status-blocked { background: var(--danger-bg); color: var(--danger); }
+.course-chips { display: flex; flex-wrap: wrap; gap: 4px; max-width: 420px; }
+.row-sub form { display: inline; }
+.row-sub .link-btn { font-size: inherit; }
+.link-btn.link-danger { color: var(--danger); }
+
+/* Admin > Exam results */
+.data.results .row-sub { max-width: 230px; }
+/* Admin > Courses > Results: one row per student, one column per test */
+.gradebook th.test, .gradebook td.test { padding-left: 6px; padding-right: 6px; text-align: center; }
+.gradebook th.test a { color: inherit; }
+.gradebook th.test small { display: block; margin-top: 4px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.gradebook td.test small { display: block; margin-top: 3px; font-size: 11px; color: var(--text-3); }
+.gradebook .row-sub { max-width: 220px; }
+.gradebook th:first-child { position: sticky; left: 0; z-index: 2; }
+.gradebook td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+.grade { display: inline-block; min-width: 44px; padding: 3px 6px; border-radius: 7px; font: 600 12.5px var(--mono); }
+.grade-pass { background: var(--good-bg); color: var(--good); }
+.grade-fail { background: var(--danger-bg); color: var(--danger); }
+a.grade:hover { filter: brightness(.95); }
+/* Admin > Re-exam requests */
+.retake-list { list-style: none; margin: 0; padding: 0; }
+.retake-item { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(260px, 1fr); gap: 20px; padding: 16px 20px; border-bottom: 1px solid var(--line-2); }
+.retake-item:last-child { border-bottom: 0; }
+.retake-test { margin: 10px 0 0; font-size: 13.5px; }
+.retake-tries { margin: 4px 0 0; font-size: 12.5px; color: var(--text-3); }
+.retake-message { margin: 8px 0 0; padding: 8px 12px; border-left: 3px solid var(--line); background: var(--bg); border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text-2); }
+.retake-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.retake-buttons select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font: inherit; font-size: 13px; }
+@media (max-width: 860px) { .retake-item { grid-template-columns: 1fr; } }
+/* One attempt, question by question */
+.review-list { list-style: none; margin: 0; padding: 16px 20px 20px; display: grid; gap: 10px; }
+.review-q { padding: 14px 16px; border: 1px solid var(--line-2); border-left: 3px solid var(--good); border-radius: 10px; }
+.review-q.is-wrong { border-left-color: var(--danger); }
+.review-q-head { display: flex; align-items: flex-start; gap: 10px; }
+.review-q-head .q-prompt { flex: 1; font-weight: 600; font-size: 14px; }
+.review-q .q-num { flex: none; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: var(--bg); font: 600 12px var(--mono); color: var(--text-2); }
+.review-image { display: block; max-width: 100%; max-height: 260px; margin: 10px 0 0 34px; border-radius: 8px; border: 1px solid var(--line-2); }
+.review-opts { list-style: none; margin: 10px 0 0 34px; padding: 0; display: grid; gap: 5px; }
+.review-opts li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--bg); font-size: 13.5px; }
+.review-opts li.is-correct { background: var(--good-bg); }
+.review-opts li.is-picked-wrong { background: var(--danger-bg); }
+.review-opts .q-mark { font: 600 12px var(--mono); color: var(--text-3); }
+.review-opts small { margin-left: auto; font-size: 11.5px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.review-explain { margin: 8px 0 0 34px; font-size: 13px; color: var(--text-2); }
+.feed li.is-current { background: var(--accent-soft); }
 
 .empty-state { padding: 56px 24px; text-align: center; color: var(--text-2); }
 .empty-state .ico { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 16px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-2); }
@@ -328,7 +374,7 @@ table.data { width: 100%; border-collapse: separate; border-spacing: 0; }
 .field textarea { min-height: 96px; resize: vertical; }
 .field input:hover, .field textarea:hover, .field select:hover { border-color: #d3d6e4; }
 .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 4px var(--accent-ring); }
-.field.has-error input, .field.has-error textarea { border-color: var(--danger); }
+.field.has-error input, .field.has-error textarea, .field.has-error .dropzone { border-color: var(--danger); }
 .error-text { font-size: 12.5px; color: var(--danger); }
 .affix { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); overflow: hidden; transition: border-color .15s, box-shadow .15s; }
 .affix:focus-within { border-color: var(--accent-2); box-shadow: 0 0 0 4px var(--accent-ring); }

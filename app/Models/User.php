@@ -55,12 +55,19 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'device_sessions' => 'array',
+            'disabled_at' => 'datetime',
         ];
     }
 
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /** A student account an admin turned off: no signing in, no courses. Admin accounts are never disabled. */
+    public function isDisabled(): bool
+    {
+        return $this->disabled_at !== null && ! $this->isAdmin();
     }
 
     public function enrollments(): HasMany
@@ -78,10 +85,16 @@ class User extends Authenticatable
         return $this->belongsToMany(CourseLesson::class, 'lesson_progress')->withPivot('completed_at');
     }
 
-    /** Admins can open every course; students need an active enrollment. */
+    /** Admins can open every course; students need an active enrollment and an account that is not turned off. */
     public function canAccessCourse(Course $course): bool
     {
-        return $this->isAdmin() || $this->activeEnrollment($course) !== null;
+        return $this->isAdmin() || (! $this->isDisabled() && $this->activeEnrollment($course) !== null);
+    }
+
+    /** An admin turned off this student's access to the course (paying or enrolling again does not undo it). */
+    public function courseAccessOff(Course $course): bool
+    {
+        return $this->enrollments()->where('course_id', $course->id)->whereNotNull('disabled_at')->exists();
     }
 
     public function activeEnrollment(Course $course): ?Enrollment

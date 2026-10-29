@@ -57,6 +57,9 @@ class GoogleAuthController extends Controller
         if ($user?->isAdmin()) {
             return redirect()->route('login')->withErrors(['email' => __('account.google_admin')]);
         }
+        if ($user?->isDisabled()) {
+            return redirect()->route('login')->withErrors(['email' => __('account.account_disabled')]);
+        }
 
         $isNew = ! $user;
         $user ??= new User(['name' => $google->getName() ?: Str::before($email, '@'), 'email' => $email]);

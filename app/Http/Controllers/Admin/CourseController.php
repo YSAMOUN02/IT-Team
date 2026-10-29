@@ -74,6 +74,9 @@ class CourseController extends Controller
         if (! $user) {
             return back()->withErrors(['email' => 'No account uses that email. Ask the student to register on the website first.'])->withInput();
         }
+        if ($user->isAdmin()) {
+            return back()->withErrors(['email' => 'That email belongs to an admin account. Admins can already open every course.'])->withInput();
+        }
 
         Enrollment::grant($user, $course, $data['days'] ?? $course->plans->first()?->days, 'manual');
 
@@ -120,7 +123,7 @@ class CourseController extends Controller
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'image' => $this->imageRule(),
             'icon' => $this->imageRule(),
-        ]);
+        ], $this->imageMessages(['image' => 'Cover image', 'icon' => 'Card icon']));
         $plans = $data['plans'] ?? [];
         unset($data['image'], $data['icon'], $data['plans']);
         $data['features'] = array_values(array_filter(array_map('trim', preg_split('/\R/u', (string) ($data['features'] ?? '')))));

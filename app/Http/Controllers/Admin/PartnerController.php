@@ -51,7 +51,7 @@ class PartnerController extends Controller
             'url' => ['nullable', 'url', 'max:500'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'logo' => $this->imageRule(),
-        ]);
+        ], $this->imageMessages(['logo' => 'Logo']));
         unset($data['logo']);
 
         $partner->fill($data);

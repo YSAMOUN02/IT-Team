@@ -91,6 +91,7 @@
                             $daysLeft = $active && $enrollment->expires_at ? (int) ceil(now()->diffInDays($enrollment->expires_at, false)) : null;
                             [$badge, $badgeClass] = match (true) {
                                 (bool) $enrollment->completed_at || $progress->complete => [__('account.completed'), 'is-done'],
+                                (bool) $enrollment->disabled_at => [__('account.turned_off'), 'is-expired'],
                                 ! $active => [__('account.expired'), 'is-expired'],
                                 $daysLeft !== null && $daysLeft <= 7 => [__('account.days_left', ['count' => max(0, $daysLeft)]), 'is-soon'],
                                 $progress->done === 0 => [__('account.not_started'), 'is-new'],
@@ -115,7 +116,7 @@
                                     <span>{{ $progress->percent }}% · {{ $progress->done }}/{{ $progress->total }}</span>
                                     <span>
                                         @if (! $active)
-                                            {{ __('account.expired') }}
+                                            {{ __($enrollment->disabled_at ? 'account.turned_off' : 'account.expired') }}
                                         @elseif ($enrollment->expires_at)
                                             {{ __('account.expires', ['date' => $enrollment->expires_at->format('d/m/Y')]) }}
                                         @else

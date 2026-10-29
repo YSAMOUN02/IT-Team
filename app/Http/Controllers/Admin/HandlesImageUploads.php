@@ -16,15 +16,35 @@ trait HandlesImageUploads
     {
         if ($request->hasFile($column)) {
             Media::delete($model->getOriginal($column));
-            $model->{$column} = Media::store($request->file($column), $folder);
+            $model->{$column} = Media::storeImage($request->file($column), $folder);
         } elseif ($request->boolean('remove_'.$column)) {
             Media::delete($model->getOriginal($column));
             $model->{$column} = null;
         }
     }
 
-    protected function imageRule(): array
+    protected function imageRule(array $types = Media::IMAGE_TYPES): array
     {
-        return ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp,svg', 'max:8192'];
+        return ['nullable', 'file', 'mimes:'.implode(',', $types), 'max:'.Media::uploadMaxKb()];
+    }
+
+    /**
+     * Messages that say which picture and why, e.g. "Cover image: the picture is bigger than 20 MB."
+     * $labels = [input name => label]; dots work for nested inputs ("uploads.logo").
+     */
+    protected function imageMessages(array $labels, array $types = Media::IMAGE_TYPES): array
+    {
+        $limit = Media::sizeLabel(Media::uploadMaxKb());
+        // "JPG, PNG, GIF, WebP or SVG"
+        $names = array_values(array_map(fn ($type) => $type === 'webp' ? 'WebP' : strtoupper($type), array_diff($types, ['jpeg'])));
+        $list = count($names) > 1 ? implode(', ', array_slice($names, 0, -1)).' or '.end($names) : implode('', $names);
+        $messages = [];
+        foreach ($labels as $field => $label) {
+            $messages["$field.uploaded"] = "$label: the picture did not arrive. It may be bigger than this server accepts ($limit).";
+            $messages["$field.mimes"] = "$label: use a $list picture. iPhone HEIC photos need to be saved as JPG first.";
+            $messages["$field.max"] = "$label: the picture is bigger than $limit. Choose a smaller one.";
+        }
+
+        return $messages;
     }
 }

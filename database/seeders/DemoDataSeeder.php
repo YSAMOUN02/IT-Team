@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\DB;
  */
 class DemoDataSeeder extends Seeder
 {
-    private array $made = [];
+    protected array $made = [];
 
     private array $changed = [];
 
@@ -224,19 +224,19 @@ class DemoDataSeeder extends Seeder
 
     // ------------------------------------------------------------- helpers
 
-    private function keep($model)
+    protected function keep($model)
     {
         $this->made[$model::class][] = $model->id;
 
         return $model;
     }
 
-    private function module(Course $course, int $position, string $title, string $description): CourseModule
+    protected function module(Course $course, int $position, string $title, string $description): CourseModule
     {
         return $this->keep($course->modules()->create(compact('title', 'description', 'position')));
     }
 
-    private function lesson(Course $course, CourseModule $module, int $position, string $title, string $duration, bool $preview = false): CourseLesson
+    protected function lesson(Course $course, CourseModule $module, int $position, string $title, string $duration, bool $preview = false): CourseLesson
     {
         return $this->keep($course->lessons()->create([
             'course_module_id' => $module->id,
@@ -250,7 +250,7 @@ class DemoDataSeeder extends Seeder
         ]));
     }
 
-    private function quiz(Course $course, CourseModule $module, int $position, string $type, string $title, array $questions): Quiz
+    protected function quiz(Course $course, CourseModule $module, int $position, string $type, string $title, array $questions): Quiz
     {
         $quiz = $this->keep($course->quizzes()->create([
             'course_module_id' => $module->id, 'type' => $type, 'title' => $title,
@@ -268,7 +268,7 @@ class DemoDataSeeder extends Seeder
         return $quiz;
     }
 
-    private function student(string $name, string $email, ?string $phone, int $daysAgo): User
+    protected function student(string $name, string $email, ?string $phone, int $daysAgo): User
     {
         $user = new User(['name' => $name, 'email' => $email, 'phone' => $phone, 'password' => 'demo1234']);
         $user->role = 'student';
@@ -278,9 +278,12 @@ class DemoDataSeeder extends Seeder
         return $this->keep($user);
     }
 
-    private function order(User $user, Course $course, ?CoursePlan $plan, string $status, int $daysAgo): Order
+    protected function order(User $user, Course $course, ?CoursePlan $plan, string $status, int $daysAgo): Order
     {
         $when = now()->subDays($daysAgo)->setTime(rand(8, 20), rand(0, 59));
+        if ($when->isFuture()) { // "today" at an hour that has not come yet
+            $when = now()->subMinutes(rand(5, 90));
+        }
         $order = $this->keep(Order::create([
             'number' => Order::newNumber(),
             'user_id' => $user->id, 'course_id' => $course->id, 'plan_id' => $plan?->id, 'plan_label' => $plan?->periodLabel(),
@@ -304,7 +307,7 @@ class DemoDataSeeder extends Seeder
     }
 
     /** Mark a share of the lessons done and pass the quizzes when finished. */
-    private function progress(User $user, Course $course, float $share): void
+    protected function progress(User $user, Course $course, float $share): void
     {
         $lessons = $course->lessons()->where('is_published', true)->get();
         foreach ($lessons->take((int) ceil($lessons->count() * $share)) as $lesson) {
@@ -314,9 +317,15 @@ class DemoDataSeeder extends Seeder
             if ($share < 1.0 && $quiz->type !== 'practice' && rand(0, 1)) {
                 continue;
             }
-            $answers = $quiz->questions->mapWithKeys(fn ($q) => [$q->id => $q->options->where('is_correct', true)->pluck('id')->all()])->all();
-            $attempt = $quiz->attempts()->create(['user_id' => $user->id, 'question_order' => array_keys($answers), 'started_at' => now()->subDays(2)]);
-            $attempt->grade($answers);
+            $this->takeQuiz($user, $quiz);
         }
+    }
+
+    /** One submitted attempt with every answer right. */
+    protected function takeQuiz(User $user, Quiz $quiz): void
+    {
+        $answers = $quiz->questions->mapWithKeys(fn ($q) => [$q->id => $q->options->where('is_correct', true)->pluck('id')->all()])->all();
+        $attempt = $quiz->attempts()->create(['user_id' => $user->id, 'question_order' => array_keys($answers), 'started_at' => now()->subMinutes(rand(8, 25))]);
+        $attempt->grade($answers);
     }
 }

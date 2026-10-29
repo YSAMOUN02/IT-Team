@@ -619,6 +619,9 @@ body.is-zoomed { overflow: hidden; }
 .quiz-facts span { font-size: 13px; color: var(--ink-2); }
 .quiz-note { color: var(--ink-2); }
 .best-score { display: flex; align-items: center; gap: 10px; }
+.retake-request { display: grid; gap: 10px; margin-top: 4px; padding: 16px 18px; border: 1px dashed var(--line); border-radius: var(--radius-sm); background: var(--tint); }
+.retake-request h3 { margin: 0; font-size: 17px; }
+.retake-request p { margin: 0; color: var(--ink-2); }
 
 .page-exam .site-header { position: static; }
 .exam-bar { position: sticky; top: 0; z-index: 30; background: #fff; border-bottom: 1px solid var(--line-soft); box-shadow: 0 4px 20px rgba(17, 24, 39, .06); }

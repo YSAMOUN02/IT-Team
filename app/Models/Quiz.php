@@ -83,14 +83,29 @@ class Quiz extends Model
         return route('learn.quiz', ['course' => $this->course->slug, 'quiz' => $this->slug]);
     }
 
-    /** Attempts left for a user, null when unlimited. */
+    /** Attempts left for a user, null when unlimited. Extra tries a teacher approved count too. */
     public function attemptsLeft(User $user): ?int
     {
         if (! $this->max_attempts) {
             return null;
         }
+        $allowed = $this->max_attempts + (int) $this->retakeRequests()->where('user_id', $user->id)->where('status', 'approved')->sum('extra_attempts');
 
-        return max(0, $this->max_attempts - $this->attempts()->where('user_id', $user->id)->whereNotNull('submitted_at')->count());
+        return max(0, $allowed - $this->attempts()->where('user_id', $user->id)->whereNotNull('submitted_at')->count());
+    }
+
+    public function retakeRequests(): HasMany
+    {
+        return $this->hasMany(RetakeRequest::class);
+    }
+
+    /** Out of tries without passing, and not already waiting for the teacher's answer. */
+    public function canRequestRetake(User $user): bool
+    {
+        return ! $this->isPractice()
+            && $this->attemptsLeft($user) === 0
+            && ! $this->attempts()->where('user_id', $user->id)->where('passed', true)->exists()
+            && ! $this->retakeRequests()->where('user_id', $user->id)->pending()->exists();
     }
 
     public function bestAttempt(User $user): ?QuizAttempt

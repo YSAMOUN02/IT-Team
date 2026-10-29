@@ -73,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
                 'orders_paid' => Order::where('status', 'paid')->count(),
                 'orders_review' => Order::where('status', 'review')->count(),
                 'students' => User::where('role', 'student')->count(),
+                'retakes' => \App\Models\RetakeRequest::pending()->count(),
             ]);
         });
     }

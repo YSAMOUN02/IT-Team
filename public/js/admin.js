@@ -51,13 +51,41 @@
         });
     });
 
-    // Image drop zones: preview the picked / dropped file
+    // Image drop zones: preview the picked / dropped file. A file the server would refuse
+    // (type not in accept=".jpg,…", bigger than data-max-kb) is let go at once with a message,
+    // so it does not stop the rest of the form from saving.
     $$('[data-dropzone]').forEach((zone) => {
+        const field = zone.parentElement;
         const input = $('input[type=file]', zone);
         const img = $('img', zone);
-        const name = zone.parentElement.querySelector('[data-dz-name]');
+        const name = field.querySelector('[data-dz-name]');
+        const error = field.querySelector('[data-dz-error]');
+        const saved = { src: img.getAttribute('src'), hidden: img.hidden, has: zone.classList.contains('has-image'), name: name?.textContent };
+        const types = input.accept.split(',').map((t) => t.trim().toLowerCase()).filter((t) => t.startsWith('.'));
+        const maxKb = +input.dataset.maxKb || 0;
+        const problem = (file) => {
+            const dot = file.name.lastIndexOf('.');
+            if (types.length && dot > 0 && !types.includes(file.name.slice(dot).toLowerCase())) {
+                return file.name + ' cannot be used here. Use ' + types.map((t) => t.slice(1).toUpperCase()).join(', ') + ' (save iPhone HEIC photos as JPG first).';
+            }
+            if (maxKb && file.size > maxKb * 1024) {
+                return file.name + ' is ' + (file.size / 1048576).toFixed(1) + ' MB; the limit is ' + Math.round(maxKb / 102.4) / 10 + ' MB. Choose a smaller picture.';
+            }
+            return '';
+        };
         const show = (file) => {
             if (!file) return;
+            const message = problem(file);
+            field.classList.toggle('has-error', !!message);
+            if (error) { error.textContent = message; error.hidden = !message; }
+            if (message) {
+                input.value = '';
+                if (saved.src) img.src = saved.src; else img.removeAttribute('src');
+                img.hidden = saved.hidden;
+                zone.classList.toggle('has-image', saved.has);
+                if (name) name.textContent = saved.name;
+                return;
+            }
             img.src = URL.createObjectURL(file);
             img.hidden = false;
             zone.classList.add('has-image');
@@ -71,6 +99,35 @@
         zone.addEventListener('drop', (e) => {
             e.preventDefault();
             if (e.dataTransfer.files[0]) { input.files = e.dataTransfer.files; show(e.dataTransfer.files[0]); }
+        });
+    });
+
+    // Other file inputs with data-max-kb (lesson video, practice files): a file that is too big is let go at once.
+    $$('input[type=file][data-max-kb]').forEach((input) => {
+        if (input.closest('[data-dropzone]')) return;
+        const note = document.createElement('span');
+        note.className = 'error-text';
+        note.hidden = true;
+        input.after(note);
+        input.addEventListener('change', () => {
+            const max = +input.dataset.maxKb * 1024;
+            const big = [...input.files].find((file) => file.size > max);
+            note.hidden = !big;
+            if (!big) return;
+            note.textContent = big.name + ' is ' + (big.size / 1048576).toFixed(1) + ' MB; the limit here is ' + Math.round(max / 104857.6) / 10 + ' MB.';
+            input.value = '';
+        });
+    });
+
+    // PHP throws a whole save away when its files add up to more than post_max_size: say so before sending.
+    const postMax = +$('meta[name=post-max-bytes]')?.content || 0;
+    $$('form[enctype="multipart/form-data"]').forEach((form) => {
+        form.addEventListener('submit', (e) => {
+            const total = $$('input[type=file]', form).reduce((sum, input) => sum + [...input.files].reduce((s, file) => s + file.size, 0), 0);
+            if (!postMax || total <= postMax) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.alert('The files you picked add up to ' + (total / 1048576).toFixed(1) + ' MB, but this server takes ' + Math.round(postMax / 1048576) + ' MB per save. Save with some of them first, then add the rest.');
         });
     });
 

@@ -13,7 +13,7 @@
 
     <div class="form-grid">
         <section class="card">
-            <div class="card-head"><div><h2>Students in this course</h2><p>{{ $rows->count() }} enrolled · {{ $rows->filter(fn ($r) => $r['enrollment']->completed_at)->count() }} completed</p></div></div>
+            <div class="card-head"><div><h2>Students in this course</h2><p>{{ $rows->count() }} enrolled · {{ $rows->filter(fn ($r) => $r['enrollment']->isActive())->count() }} can open it now · {{ $rows->filter(fn ($r) => $r['enrollment']->disabled_at)->count() }} turned off · {{ $rows->filter(fn ($r) => $r['enrollment']->completed_at)->count() }} completed</p></div></div>
             @if ($rows->isEmpty())
                 <div class="empty-state">
                     <div class="ico">@include('admin.partials.icon', ['name' => 'users'])</div>
@@ -23,7 +23,7 @@
             @else
                 <div class="table-wrap">
                     <table class="data">
-                        <thead><tr><th>Student</th><th>Progress</th><th>Access</th><th>Source</th><th></th></tr></thead>
+                        <thead><tr><th>Student</th><th>Progress</th><th>Access</th></tr></thead>
                         <tbody>
                         @foreach ($rows as ['enrollment' => $enrollment, 'progress' => $progress])
                             <tr>
@@ -32,28 +32,17 @@
                                         <span class="avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($enrollment->user->name, 0, 1)) }}</span>
                                         <div>
                                             <a href="{{ $enrollment->user->isAdmin() ? route('admin.users.edit', $enrollment->user) : route('admin.students.show', $enrollment->user) }}">{{ $enrollment->user->name }}</a>
+                                            @if ($enrollment->user->isDisabled())<span class="status status-blocked">Account off</span>@endif
                                             <span class="row-sub">{{ $enrollment->user->email }}</span>
+                                            @include('admin.students._course-line')
                                         </div>
                                     </div>
                                 </td>
-                                <td style="min-width:160px">
+                                <td style="min-width:130px">
                                     <div class="mini-progress"><span style="width: {{ $progress->percent }}%"></span></div>
-                                    <span class="row-sub">{{ $progress->percent }}% @if ($enrollment->certificate_code)· certificate @endif</span>
+                                    <span class="row-sub">{{ $progress->percent }}% · {{ $progress->done }}/{{ $progress->total }}</span>
                                 </td>
-                                <td>
-                                    @if (! $enrollment->isActive())
-                                        <span class="status status-off">Ended {{ $enrollment->expires_at?->format('d M Y') }}</span>
-                                    @else
-                                        <span class="status status-on">{{ $enrollment->expires_at ? 'Until '.$enrollment->expires_at->format('d M Y') : 'Lifetime' }}</span>
-                                    @endif
-                                </td>
-                                <td class="muted">{{ ucfirst($enrollment->source) }}</td>
-                                <td class="actions">
-                                    <form method="post" action="{{ route('admin.enrollments.destroy', $enrollment) }}" data-confirm="Remove {{ $enrollment->user->name }}'s access to this course?">
-                                        @csrf @method('DELETE')
-                                        <button class="btn btn-danger btn-sm">Remove</button>
-                                    </form>
-                                </td>
+                                <td>@include('admin.students._access') @include('admin.students._access-actions')</td>
                             </tr>
                         @endforeach
                         </tbody>

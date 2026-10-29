@@ -18,7 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // One paid account must not be shared: limits how many devices a student is signed in on.
-        $middleware->web(append: [\App\Http\Middleware\EnsureKnownDevice::class]);
+        // A student account an admin turned off is signed out on its next request.
+        $middleware->web(append: [\App\Http\Middleware\EnsureAccountEnabled::class, \App\Http\Middleware\EnsureKnownDevice::class]);
 
         // Guests: admin pages -> admin sign-in, everything else -> student sign-in.
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('admin', 'admin/*') ? route('admin.login') : route('login'));

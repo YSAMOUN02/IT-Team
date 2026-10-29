@@ -35,6 +35,9 @@ class CheckoutController extends Controller
         if (! $request->user()) {
             return $this->askToSignIn($request, $course, $selected);
         }
+        if ($request->user()->courseAccessOff($course)) {
+            return redirect()->route('courses.show', $course->slug)->with('checkout_notice', __('account.access_off'));
+        }
         if ($request->user()->canAccessCourse($course) && ! $request->boolean('renew')) {
             return redirect()->route('learn.course', $course->slug);
         }
@@ -53,6 +56,9 @@ class CheckoutController extends Controller
     public function store(Request $request, Course $course)
     {
         abort_unless($course->isPurchasable(), 404);
+        if ($request->user()->courseAccessOff($course)) {
+            return redirect()->route('courses.show', $course->slug)->with('checkout_notice', __('account.access_off'));
+        }
 
         $data = $request->validate([
             'plan_id' => ['required', Rule::exists('course_plans', 'id')->where('course_id', $course->id)],

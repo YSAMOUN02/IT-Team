@@ -131,6 +131,7 @@ Route::prefix('learn/{course:slug}')->name('learn.')->middleware('no-store')->sc
 
         Route::get('quizzes/{quiz:slug}', [QuizController::class, 'show'])->name('quiz');
         Route::post('quizzes/{quiz:slug}/start', [QuizController::class, 'start'])->name('quiz.start');
+        Route::post('quizzes/{quiz:slug}/retake-request', [QuizController::class, 'requestRetake'])->middleware('throttle:6,1')->name('quiz.retake-request');
         Route::get('quizzes/{quiz:slug}/attempts/{attempt}', [QuizController::class, 'attempt'])->name('attempt');
         Route::post('quizzes/{quiz:slug}/attempts/{attempt}', [QuizController::class, 'submit'])->name('submit');
         Route::get('quizzes/{quiz:slug}/attempts/{attempt}/result', [QuizController::class, 'result'])->name('result');
@@ -173,6 +174,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('curriculum/toggle', [Admin\CurriculumController::class, 'toggle'])->name('curriculum.toggle');
         Route::post('courses/{course}/duplicate', [Admin\CourseController::class, 'duplicate'])->name('courses.duplicate');
         Route::get('courses/{course}/students', [Admin\CourseController::class, 'students'])->name('courses.students');
+        Route::get('courses/{course}/results', [Admin\ResultController::class, 'course'])->name('courses.results');
+        Route::get('courses/{course}/results.csv', [Admin\ResultController::class, 'courseExport'])->name('courses.results.export');
         Route::post('courses/{course}/students', [Admin\CourseController::class, 'grantByEmail'])->name('courses.students.grant');
         Route::post('courses/{course}/modules', [Admin\CurriculumController::class, 'storeModule'])->name('modules.store');
         Route::put('modules/{module}', [Admin\CurriculumController::class, 'updateModule'])->name('modules.update');
@@ -189,9 +192,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('orders/{order}/refund', [Admin\OrderController::class, 'refund'])->name('orders.refund');
         Route::get('students', [Admin\StudentController::class, 'index'])->name('students.index');
         Route::get('students/{user}', [Admin\StudentController::class, 'show'])->name('students.show');
+        Route::patch('students/{user}', [Admin\StudentController::class, 'update'])->name('students.update');
         Route::post('students/{user}/enrollments', [Admin\StudentController::class, 'grant'])->name('students.grant');
+        Route::post('students/{user}/certificates', [Admin\StudentController::class, 'giveCertificate'])->name('students.certificates.store');
+        Route::patch('enrollments/{enrollment}', [Admin\StudentController::class, 'updateEnrollment'])->name('enrollments.update');
+        Route::delete('enrollments/{enrollment}/certificate', [Admin\StudentController::class, 'takeBackCertificate'])->name('enrollments.certificate.destroy');
         Route::delete('enrollments/{enrollment}', [Admin\StudentController::class, 'revoke'])->name('enrollments.destroy');
         Route::post('students/{user}/sign-out', [Admin\StudentController::class, 'signOut'])->name('students.sign-out');
+        Route::get('results', [Admin\ResultController::class, 'index'])->name('results.index');
+        Route::get('results/{attempt}', [Admin\ResultController::class, 'show'])->name('results.show');
+        Route::post('results/{attempt}/extra-try', [Admin\RetakeRequestController::class, 'give'])->name('results.extra-try');
+        Route::get('retake-requests', [Admin\RetakeRequestController::class, 'index'])->name('retake-requests.index');
+        Route::patch('retake-requests/{retakeRequest}', [Admin\RetakeRequestController::class, 'decide'])->name('retake-requests.decide');
 
         Route::resource('articles', Admin\ArticleController::class)->except('show');
         Route::resource('testimonials', Admin\TestimonialController::class)->except('show');
