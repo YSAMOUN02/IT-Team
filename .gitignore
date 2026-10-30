@@ -26,3 +26,4 @@ Thumbs.db
 # Not for a public repository
 /*.sql
 /example/
+/public/*.zip
