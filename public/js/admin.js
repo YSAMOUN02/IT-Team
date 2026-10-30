@@ -66,7 +66,9 @@
         const problem = (file) => {
             const dot = file.name.lastIndexOf('.');
             if (types.length && dot > 0 && !types.includes(file.name.slice(dot).toLowerCase())) {
-                return file.name + ' cannot be used here. Use ' + types.map((t) => t.slice(1).toUpperCase()).join(', ') + ' (save iPhone HEIC photos as JPG first).';
+                // .jfif / .jpe are other names for JPG: allowed, but not worth listing.
+                const listed = types.filter((t) => t !== '.jfif' && t !== '.jpe');
+                return file.name + ' cannot be used here. Use ' + listed.map((t) => t.slice(1).toUpperCase()).join(', ') + ' (save iPhone HEIC photos as JPG first).';
             }
             if (maxKb && file.size > maxKb * 1024) {
                 return file.name + ' is ' + (file.size / 1048576).toFixed(1) + ' MB; the limit is ' + Math.round(maxKb / 102.4) / 10 + ' MB. Choose a smaller picture.';

@@ -185,8 +185,19 @@ class PageSetupTest extends TestCase
         $page = $this->home();
 
         $this->actingAs($this->admin())->get("/admin/pages/{$page->id}/edit")
-            ->assertSee('name="uploads[founder][image]" accept=".jpg,.jpeg,.png,.gif,.webp,.svg"', false)
+            ->assertSee('name="uploads[founder][image]" accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.jfif,.jpe"', false)
             ->assertSee('data-max-kb="20480"', false)
             ->assertSee('up to 20 MB');
+    }
+
+    public function test_a_jpg_saved_from_the_web_as_jfif_is_taken_and_stored_as_jpg(): void
+    {
+        $page = $this->home();
+        $jpg = UploadedFile::fake()->image('x.jpg', 600, 800);
+        $file = UploadedFile::fake()->createWithContent('founder photo.jfif', file_get_contents($jpg->getPathname()));
+
+        $this->save($page, ['uploads' => ['founder' => ['image' => $file]]])->assertSessionHasNoErrors();
+
+        $this->assertMatchesRegularExpression('#^pages/\d{4}/\d{2}/founder-photo-[a-z0-9]{6}\.jpg$#', $page->fresh()->field('founder.image'));
     }
 }

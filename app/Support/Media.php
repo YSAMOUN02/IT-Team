@@ -28,10 +28,18 @@ class Media
         return $kb >= 1024 ? round($kb / 1024, 1).' MB' : $kb.' KB';
     }
 
-    /** For <input accept="…">: ".jpg,.jpeg,.png…" */
+    /**
+     * For <input accept="…">: ".jpg,.jpeg,.png…". Windows often names a JPG saved from Chrome or
+     * Facebook ".jfif" (or ".jpe"); the picker would hide it, so those names are let in too.
+     * The server goes by what the file is, and stores it as .jpg.
+     */
     public static function accept(array $types = self::IMAGE_TYPES): string
     {
-        return implode(',', array_map(fn ($type) => '.'.$type, $types));
+        if (array_intersect(['jpg', 'jpeg'], $types)) {
+            $types = [...$types, 'jfif', 'jpe'];
+        }
+
+        return implode(',', array_map(fn ($type) => '.'.$type, array_unique($types)));
     }
 
     /** Bytes PHP takes in one form post (post_max_size); a form with several files must stay under it. */
