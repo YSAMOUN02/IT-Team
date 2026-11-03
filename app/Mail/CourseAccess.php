@@ -34,8 +34,7 @@ class CourseAccess extends Mailable
         if ($student->isDisabled()) {
             return 'disabled';
         }
-        $faked = Mail::getFacadeRoot() instanceof \Illuminate\Support\Testing\Fakes\MailFake;
-        if (! $faked && in_array(config('mail.default'), ['log', 'array'], true)) {
+        if (! \App\Support\MailSetup::ready()) {
             return 'off';
         }
         try {

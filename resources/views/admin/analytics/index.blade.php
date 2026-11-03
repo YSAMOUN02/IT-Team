@@ -2,7 +2,7 @@
 
 @php
     $time = fn ($s) => $s ? ($s >= 60 ? intdiv($s, 60).'m '.str_pad($s % 60, 2, '0', STR_PAD_LEFT).'s' : $s.'s') : '—';
-    $kindLabels = ['course' => 'Course page', 'checkout' => 'Clicked Buy', 'lesson' => 'Lesson', 'quiz' => 'Test', 'learn' => 'Course home', 'page' => null];
+    $kindLabels = ['post' => 'Post', 'course' => 'Course page', 'checkout' => 'Clicked Buy', 'lesson' => 'Lesson', 'quiz' => 'Test', 'learn' => 'Course home', 'page' => null];
     $maxCourse = max(1, $courses->max('visitors'));
     $maxPage = max(1, $pages->max('views'));
 @endphp
@@ -10,6 +10,7 @@
 @section('title', 'Visitors')
 @section('subtitle', 'Who visits the website, which pages and courses they open, when, and for how long.')
 @section('actions')
+    <a class="btn btn-ghost" href="{{ route('admin.tracking') }}">@include('admin.partials.icon', ['name' => 'calendar']) Posts, courses, ads by date</a>
     <nav class="segmented" aria-label="Period">
         @foreach ($ranges as $key => $label)
             <a href="{{ route('admin.analytics', ['range' => $key]) }}" @class(['on' => $range === $key])>{{ $label }}</a>

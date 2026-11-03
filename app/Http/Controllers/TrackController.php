@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdView;
+use App\Models\Article;
 use App\Models\Course;
 use App\Models\PageView;
+use App\Support\Ads;
 use App\Support\Visitor;
 use Illuminate\Http\Request;
 
@@ -49,7 +52,7 @@ class TrackController extends Controller
             // Pages after the first one in a visit keep the visit's source (Facebook, Google…).
             $source = PageView::where('session_id', $existingVisit)->orderBy('id')->value('source') ?? $source;
         }
-        [$kind, $courseId] = $this->classify($path);
+        [$kind, $courseId, $articleId] = $this->classify($path);
 
         $view = PageView::create([
             'visitor_id' => $visitor,
@@ -58,6 +61,7 @@ class TrackController extends Controller
             'path' => mb_substr($path, 0, 255),
             'title' => isset($data['title']) ? mb_substr(trim($data['title']), 0, 255) : null,
             'course_id' => $courseId,
+            'article_id' => $articleId,
             'kind' => $kind,
             'source' => $source,
             'referrer_host' => $host ? mb_substr($host, 0, 120) : null,
@@ -91,7 +95,25 @@ class TrackController extends Controller
         return response()->noContent();
     }
 
-    /** What kind of page this is, and which course it belongs to. */
+    /**
+     * A banner came on screen (the page says so once per banner, per page opened). These are the
+     * "views" next to its clicks in Admin > Tracking. Bots and admins are not counted.
+     */
+    public function spot(Request $request)
+    {
+        if (Visitor::isBot($request->userAgent()) || $request->user()?->isAdmin()) {
+            return response()->noContent();
+        }
+
+        $data = $request->validate(['spot' => ['required', 'string', 'max:40']]);
+        if (Ads::state($data['spot']) === 'live') {
+            AdView::create(['placement' => $data['spot'], 'visitor_id' => $this->validId($request->cookie(self::VISITOR_COOKIE))]);
+        }
+
+        return response()->noContent();
+    }
+
+    /** What kind of page this is, and which course or post it belongs to. */
     private function classify(string $path): array
     {
         $patterns = [
@@ -103,11 +125,19 @@ class TrackController extends Controller
         ];
         foreach ($patterns as $kind => $pattern) {
             if (preg_match($pattern, $path, $m)) {
-                return [$kind, Course::where('slug', $m[1])->value('id')];
+                return [$kind, Course::where('slug', $m[1])->value('id'), null];
             }
         }
 
-        return ['page', null];
+        foreach (Article::SECTIONS as $type => $section) {
+            if (preg_match('#^/'.$section.'/([^/]+)/?$#u', $path, $m)) {
+                $articleId = Article::ofType($type)->where('slug', $m[1])->value('id');
+
+                return $articleId ? ['post', null, $articleId] : ['page', null, null];
+            }
+        }
+
+        return ['page', null, null];
     }
 
     private function cookieId(Request $request, string $name): string

@@ -85,6 +85,8 @@ Route::get('/go/{placement}', \App\Http\Controllers\AdClickController::class)->w
 // Website statistics (page opened / time on page), see Admin > Visitors.
 Route::post('/stats/view', [TrackController::class, 'view'])->middleware('throttle:stats')->name('stats.view');
 Route::post('/stats/leave', [TrackController::class, 'leave'])->middleware('throttle:stats')->name('stats.leave');
+// Not called "ad…": ad blockers would stop it (the same reason own banners are "promo" and /go/).
+Route::post('/stats/spot', [TrackController::class, 'spot'])->middleware('throttle:stats')->name('stats.spot');
 Route::get('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 
 Route::get('/certificates/{code}', [LearnController::class, 'verifyCertificate'])->name('certificates.verify');
@@ -183,6 +185,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/', Admin\DashboardController::class)->name('dashboard');
         Route::get('visitors', [Admin\AnalyticsController::class, 'index'])->name('analytics');
+        Route::get('tracking', [Admin\TrackingController::class, 'index'])->name('tracking');
         Route::get('search', Admin\SearchController::class)->name('search');
 
         // Courses and their curriculum (modules, lessons, quizzes, questions)
@@ -233,6 +236,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('partners', Admin\PartnerController::class)->except('show');
         Route::resource('pages', Admin\PageController::class)->only(['index', 'edit', 'update']);
         Route::resource('inquiries', Admin\InquiryController::class)->only(['index', 'show', 'destroy']);
+        Route::post('inquiries/{inquiry}/reply', [Admin\InquiryController::class, 'reply'])->middleware('throttle:20,1')->name('inquiries.reply');
+        Route::put('reply-signature', [Admin\InquiryController::class, 'signature'])->name('inquiries.signature');
         Route::get('subscribers/export', [Admin\SubscriberController::class, 'export'])->name('subscribers.export');
         Route::resource('subscribers', Admin\SubscriberController::class)->only(['index', 'destroy']);
         Route::resource('users', Admin\UserController::class)->except('show');

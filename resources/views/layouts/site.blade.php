@@ -18,7 +18,7 @@
     $locale = app()->getLocale() === 'km' ? 'km_KH' : 'en_US';
 @endphp
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @unless (auth()->user()?->isAdmin()) data-track="{{ route('stats.view') }}" data-track-leave="{{ route('stats.leave') }}" @endunless>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @unless (auth()->user()?->isAdmin()) data-track="{{ route('stats.view') }}" data-track-leave="{{ route('stats.leave') }}" data-track-spot="{{ route('stats.spot') }}" @endunless>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

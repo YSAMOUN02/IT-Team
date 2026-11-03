@@ -367,4 +367,6 @@ return [
     'tab_invoices' => 'Invoices',
     'tab_profile' => 'Profile',
     'view' => 'View',
+    // Replies to contact messages (email)
+    'reply_quote_head' => 'On :date, :name wrote:',
 ];

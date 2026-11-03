@@ -7,6 +7,7 @@
         ['A', 'Overview', [
             ['Dashboard', route('admin.dashboard'), request()->routeIs('admin.dashboard'), 'home', null],
             ['Visitors', route('admin.analytics'), request()->routeIs('admin.analytics'), 'chart', ['count', $navCounts['online']]],
+            ['Tracking', route('admin.tracking'), request()->routeIs('admin.tracking'), 'calendar', null],
             ['Messages', route('admin.inquiries.index'), request()->routeIs('admin.inquiries.*'), 'inbox', ['badge', $navCounts['inquiries']]],
             ['Subscribers', route('admin.subscribers.index'), request()->routeIs('admin.subscribers.*'), 'mail', ['count', $navCounts['subscribers']]],
         ]],

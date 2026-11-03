@@ -1159,3 +1159,9 @@ ins.adsbygoogle[data-ad-status="unfilled"] { display: none !important; }
     .simple-table.stack .cell-action { grid-column: 1 / -1; }
     .simple-table.stack .cell-action a { display: flex; justify-content: center; padding: 11px; border: 1.5px solid var(--line); border-radius: 999px; font-weight: 600; }
 }
+
+/* List pages: a banner above the cards sits right under the page title, without a double gap. */
+.section:has(> .container > .promo-listing:first-child),
+.section:has(> .container > .ad-listing:first-child) { padding-top: clamp(24px, 3vw, 36px); }
+.promo-listing, .ad-slot.ad-listing { margin-top: 0; margin-bottom: clamp(24px, 3vw, 36px); }
+.page-header h1:last-child { margin-bottom: 0; } /* a band with only a title: keep it centred */

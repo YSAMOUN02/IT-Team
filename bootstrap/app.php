@@ -27,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // PayWay calls this server-to-server; it cannot carry a CSRF token.
         // The statistics beacons only count page views, and often fire after the session has expired.
-        $middleware->validateCsrfTokens(except: ['payway/pushback', 'stats/view', 'stats/leave']);
+        $middleware->validateCsrfTokens(except: ['payway/pushback', 'stats/view', 'stats/leave', 'stats/spot']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

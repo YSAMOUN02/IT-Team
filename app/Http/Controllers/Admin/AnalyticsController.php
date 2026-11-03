@@ -66,7 +66,7 @@ class AnalyticsController extends Controller
     }
 
     /** Percent change against the previous period of the same length (null = nothing to compare with). */
-    private function change(int $now, int $before): ?int
+    public static function change(int $now, int $before): ?int
     {
         return $before > 0 ? (int) round(($now - $before) * 100 / $before) : null;
     }
@@ -145,7 +145,7 @@ class AnalyticsController extends Controller
             ->sortByDesc('visitors')->values();
     }
 
-    private function breakdown($query, string $column)
+    public static function breakdown($query, string $column)
     {
         $rows = $query->selectRaw("$column as name, count(distinct visitor_id) as visitors")
             ->groupBy($column)->orderByDesc('visitors')->limit(8)->get();

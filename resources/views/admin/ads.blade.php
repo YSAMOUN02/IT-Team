@@ -113,7 +113,7 @@
                     <div class="card-body">
                         <dl class="meta-list">
                             <dt>Live spots</dt><dd>{{ $live->count() }} of {{ count($placements) }}</dd>
-                            <dt>Banner clicks</dt><dd>{{ number_format(array_sum($clicks)) }} <span class="muted">· 30 days</span></dd>
+                            <dt>Banner clicks</dt><dd><a href="{{ route('admin.tracking', ['tab' => 'ads']) }}" title="Views and clicks by date">{{ number_format(array_sum($clicks)) }}</a> <span class="muted">· 30 days</span></dd>
                             <dt>AdSense</dt><dd>{{ $publisher ?? 'Not set' }}</dd>
                             <dt>Auto ads</dt><dd>{{ \App\Support\Ads::autoAds() ? 'On' : 'Off' }}</dd>
                             <dt>ads.txt</dt><dd>@if ($publisher)<a href="{{ url('ads.txt') }}" target="_blank" rel="noopener">/ads.txt ↗</a>@else Needs publisher ID @endif</dd>
@@ -127,9 +127,10 @@
                     <div class="card-head"><h2>Good to know</h2></div>
                     <div class="card-body" style="font-size:13px;color:var(--text-2);display:grid;gap:8px">
                         <p style="margin:0"><b>Your own image:</b> upload a banner, choose where a click goes, save. It shows straight away; no Google approval needed.</p>
-                        <p style="margin:0">Clicks on your banners are counted (not admins or search-engine bots).</p>
+                        <p style="margin:0">Views and clicks on your banners are counted (not admins or search-engine bots). See them by date in <a href="{{ route('admin.tracking', ['tab' => 'ads']) }}">Tracking</a>.</p>
                         <p style="margin:0">Ads never show in the admin, at checkout or in the student course player.</p>
-                        <p style="margin:0">A spot that is on with nothing to show yet shows an “Ad space” placeholder linking to your contact page.</p>
+                        <p style="margin:0">A spot that is on with nothing to show yet stays empty for visitors; only admins see an “Ad space” box there.</p>
+                        <p style="margin:0"><b>Same picture in several spots:</b> it shows once per page, in the highest spot. Use a different picture to show a spot as well.</p>
                         <p style="margin:0"><b>Google AdSense:</b> new sites must be approved by Google first. If Google has no ad to show, the spot hides itself.</p>
                     </div>
                 </section>

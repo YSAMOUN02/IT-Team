@@ -49,6 +49,10 @@ return [
         'bing_site_verification' => ['type' => 'text', 'label' => 'Bing Webmaster verification code (optional)'],
     ]],
 
+    'replies' => ['label' => 'Email replies', 'fields' => [
+        'reply_signature' => ['type' => 'textarea', 'label' => 'Signature under every reply sent from Messages (empty = site name, phone, email and website)'],
+    ]],
+
     'payments' => ['label' => 'Payments', 'fields' => [
         'online_payment' => ['type' => 'toggle', 'default' => '0', 'label' => 'Online payment (ABA PayWay and KHQR) is on. Off: the checkout page asks students to contact you (Telegram / phone) and admins give the course by hand (Course › Students › Give access).'],
         'payment_contact_url' => ['type' => 'url', 'label' => 'Contact link to buy while online payment is off (empty = the Telegram link under Social media)'],

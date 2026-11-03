@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+
 /**
  * Ad output: your own banner image or Google AdSense, per placement. Everything
  * returns null/empty unless it is fully set up, so an unused placement leaves no
@@ -122,13 +125,67 @@ class Ads
 
     /**
      * What a page shows: like state(), but visitors never see an empty "ad space" box (it looks
-     * unfinished above a course); admins still do, so they can see where an ad would go.
+     * unfinished above a course; admins still do, so they can see where an ad would go), and
+     * nobody sees the same banner twice on one page.
      */
     public static function shownState(string $placement): string
     {
         $state = self::state($placement);
+        if ($state === 'placeholder') {
+            return auth()->user()?->isAdmin() ? $state : 'off';
+        }
 
-        return $state === 'placeholder' && ! auth()->user()?->isAdmin() ? 'off' : $state;
+        return $state === 'live' && self::repeatsOnThisPage($placement) ? 'off' : $state;
+    }
+
+    /**
+     * Is this spot's banner the same picture as one higher up the page? The highest spot keeps it.
+     * Blade renders a page's content before its layout, so the header spot (top of the page) may not
+     * have run yet: it always counts as above. A different picture in a spot still shows.
+     */
+    private static function repeatsOnThisPage(string $placement): bool
+    {
+        $picture = self::banner($placement) ? self::picture($placement) : null;
+        if ($picture === null) {
+            return false; // Google ad, or nothing to compare
+        }
+
+        $shown = request()->attributes->get('ads_pictures_shown', []);
+        if ($placement !== 'header') {
+            $above = self::banner('header') ? [self::picture('header')] : [];
+            if (in_array($picture, [...$shown, ...$above], true)) {
+                return true;
+            }
+        }
+        request()->attributes->set('ads_pictures_shown', [...$shown, $picture]);
+
+        return false;
+    }
+
+    /** This spot holds the same picture as the header spot, so it stays hidden wherever that one shows. */
+    public static function sharesPictureWithHeader(string $placement): bool
+    {
+        return $placement !== 'header' && self::banner($placement) && self::banner('header')
+            && self::picture($placement) === self::picture('header');
+    }
+
+    /**
+     * What a spot's banner looks like, for comparing: a fingerprint of the file itself, because
+     * each upload gets its own file name even when it is the same picture. A stored file never
+     * changes, so one fingerprint per file is enough.
+     */
+    private static function picture(string $placement): ?string
+    {
+        $path = setting("ad_{$placement}_image");
+        if (blank($path)) {
+            return null;
+        }
+
+        return Cache::rememberForever('banner-picture:'.$path, function () use ($path) {
+            $disk = Storage::disk('public');
+
+            return $disk->exists($path) ? md5((string) $disk->get($path)) : $path;
+        });
     }
 
     /** Box size the placeholder mimics, from the placement's format. */

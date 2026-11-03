@@ -199,6 +199,20 @@ not available, checkout says so. Receipt emails need real mail settings
 - **Without the token**: the student taps *I have paid*; an admin checks the bank app and presses *Confirm payment received* on the order. Either way: access, invoice and receipt email as for any paid order.
 - On this PC (no PayWay keys) a *Test: act as paid* button appears; never on the live site.
 
+## Messages: reply by email
+
+- **Admin > Messages** lists what visitors send from the contact form and course pages. Open one to see the conversation and the reply box (To, Subject, Message, Signature). It goes out through the site email (`MAIL_*` in `.env`) with the original message quoted below; answers come back to that Gmail inbox, not into the admin.
+- There is **one signature** for all replies: *Edit* on the reply box, or **Settings > Email replies**. A change is kept for later replies; replies already sent keep theirs. Empty = site name, phone, email and website.
+- Sent replies are kept under the message (`inquiry_replies`) and the list shows *Replied*. If the email cannot go, nothing is kept and the text stays in the box.
+
+## Tracking: posts, courses and ads by date
+
+- **Admin > Tracking**: pick From and To (or Today, Last 7 days, This month…), then the tab. Each number is compared with the same number of days just before. Click a row to see that one post, course or ad spot on its own.
+- **Posts** (tutorials and news): views, readers, time on the post, where readers came from. Page views know their post (`page_views.article_id`).
+- **Courses**: people who opened the page, clicked Buy / Enroll, new students, income from paid invoices (refunds left out), studying, finished.
+- **Ads**: per spot, banner views, people, clicks and click rate. A banner counts as viewed once half of it has been on screen, once per page (`ad_views`, reported by `public/js/site.js` to `/stats/spot`; the address avoids the word "ad" because ad blockers would stop it). Google ads get views only; their clicks are in AdSense.
+- Admins and search-engine bots are not counted; no IP addresses are kept.
+
 ## Ads, visitors, newsletter
 
 - Admin → *Ads*: six ad spots. Each shows either **your own banner image**

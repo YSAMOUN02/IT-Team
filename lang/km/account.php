@@ -367,4 +367,6 @@ return [
     'tab_invoices' => 'វិក្កយបត្រ',
     'tab_profile' => 'គណនី',
     'view' => 'មើល',
+    // Replies to contact messages (email)
+    'reply_quote_head' => 'នៅ :date :name បានសរសេរ៖',
 ];

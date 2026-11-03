@@ -113,6 +113,39 @@ class OwnBannerAdsTest extends TestCase
         $this->actingAs($this->admin())->get('/courses')->assertSee('ad-placeholder', false);
     }
 
+    public function test_the_same_picture_shows_once_on_a_page_in_the_highest_spot(): void
+    {
+        // Uploaded three times: three file names, one picture.
+        foreach (['header', 'listing', 'footer'] as $spot) {
+            Storage::disk('public')->put("promos/2026/11/banner-$spot.gif", 'the same picture');
+            $this->banner($spot, ["ad_{$spot}_image" => "promos/2026/11/banner-$spot.gif"]);
+        }
+
+        $page = $this->get('/news')->assertOk();
+        $page->assertSee('class="promo promo-header', false)->assertDontSee('promo-listing', false)->assertDontSee('promo-footer', false);
+
+        // A different picture is another banner, so it keeps its spot.
+        Storage::disk('public')->put('promos/2026/11/other.gif', 'another picture');
+        $this->banner('listing', ['ad_listing_image' => 'promos/2026/11/other.gif']);
+        $this->get('/news')->assertSee('promo-header', false)->assertSee('promo-listing', false)->assertDontSee('promo-footer', false);
+
+        // With the top spot off, the next spot shows it instead.
+        Setting::put(['ad_header_enabled' => null]);
+        $this->get('/news')->assertDontSee('promo-header', false)->assertSee('promo-listing', false)->assertSee('promo-footer', false);
+    }
+
+    public function test_the_same_picture_shows_once_on_an_article_too(): void
+    {
+        $article = \App\Models\Article::create(['type' => 'news', 'title' => 'Hello', 'slug' => 'hello', 'body' => '<p>Text</p>', 'is_published' => true, 'published_at' => now()->subDay()]);
+        foreach (['article_top', 'article_bottom', 'footer'] as $spot) {
+            Storage::disk('public')->put("promos/2026/11/$spot.gif", 'the same picture');
+            $this->banner($spot, ["ad_{$spot}_image" => "promos/2026/11/$spot.gif"]);
+        }
+
+        $this->get('/news/'.$article->slug)->assertOk()
+            ->assertSee('promo-article-top', false)->assertDontSee('promo-article-bottom', false)->assertDontSee('promo-footer', false);
+    }
+
     public function test_bad_files_and_links_are_refused(): void
     {
         $this->actingAs($this->admin())->from('/admin/ads')->put('/admin/ads', [

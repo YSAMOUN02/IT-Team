@@ -168,7 +168,7 @@
         let shownMs = 0;
         let shownSince = document.visibilityState === 'visible' ? Date.now() : null;
         const utm = new URLSearchParams(location.search).get('utm_source');
-        fetch(track, {
+        const opened = fetch(track, {
             method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' },
             body: form({ path: location.pathname, title: document.title, referrer: document.referrer, utm }),
         }).then((r) => (r.status === 200 ? r.json() : null)).then((json) => { viewId = json?.id ?? null; }).catch(() => {});
@@ -183,5 +183,20 @@
             if (document.visibilityState === 'hidden') report(); else shownSince = Date.now();
         });
         window.addEventListener('pagehide', report);
+
+        // Admin > Tracking: a banner counts as viewed once half of it has been on screen, once per page.
+        // Starts after the page view above, whose answer sets a new visitor's cookie.
+        const spotUrl = document.documentElement.dataset.trackSpot;
+        const spots = document.querySelectorAll('[data-spot]');
+        if (spotUrl && spots.length && navigator.sendBeacon && 'IntersectionObserver' in window) {
+            opened.then(() => {
+                const seen = new IntersectionObserver((entries) => entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    seen.unobserve(entry.target);
+                    navigator.sendBeacon(spotUrl, form({ spot: entry.target.dataset.spot }));
+                }), { threshold: 0.5 });
+                spots.forEach((spot) => seen.observe(spot));
+            });
+        }
     }
 })();

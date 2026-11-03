@@ -307,6 +307,34 @@
         setMode(mode.value);
     });
 
+    // Messages › Reply: "Reply" jumps to the box, the signature's Edit opens it (preview follows
+    // the typing), Ctrl/Cmd + Enter sends.
+    $$('[data-reply-form]').forEach((form) => {
+        const body = $('[data-reply-body]', form);
+        $('[data-reply-jump]')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            form.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => body.focus({ preventScroll: true }), 350);
+        });
+        const box = $('[data-signature]', form);
+        const preview = $('[data-signature-preview]', box);
+        const editor = $('[data-signature-editor]', box);
+        const input = $('[data-signature-input]', box);
+        const edit = $('[data-signature-edit]', box);
+        edit.addEventListener('click', () => {
+            const open = editor.hidden;
+            editor.hidden = !open;
+            preview.hidden = open;
+            edit.lastChild.textContent = open ? ' Done' : ' Edit';
+            if (open) input.focus();
+        });
+        input.addEventListener('input', () => { preview.textContent = input.value; });
+        form.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); form.requestSubmit(); }
+        });
+        if (location.hash === '#reply' || form.querySelector('.has-error, .alert-error[role=alert]')) body.focus();
+    });
+
     // Give access (course page, student page, Add student): plan buttons fill days + amount, a
     // Lifetime plan sends lifetime=1, typing days un-picks the plan; the plans follow the course picked.
     $$('[data-access-form]').forEach((form) => {
@@ -342,5 +370,24 @@
             showPlans();
         });
         showPlans();
+    });
+
+    // Forms that send an email take a few seconds: say so and lock the button, so an impatient
+    // second click cannot send it twice (or give a course, and its invoice, twice).
+    $$('[data-reply-form], [data-access-form]').forEach((form) => {
+        const button = $('button:not([type=button])', form);
+        if (!button) return;
+        const label = button.querySelector('[data-grant-submit-text]') || button.lastChild;
+        const idle = label.textContent;
+        const unlock = () => { button.disabled = false; button.classList.remove('is-busy'); label.textContent = idle; };
+        form.addEventListener('submit', (e) => {
+            if (e.defaultPrevented) return; // e.g. no student picked yet
+            label.textContent = ' Sending…';
+            button.classList.add('is-busy');
+            // After this moment, so the browser still sends the button's own value.
+            setTimeout(() => { button.disabled = true; });
+        });
+        // Back button: the browser may restore the page exactly as it was left.
+        window.addEventListener('pageshow', (e) => { if (e.persisted) unlock(); });
     });
 })();

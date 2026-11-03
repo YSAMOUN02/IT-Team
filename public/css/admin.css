@@ -819,3 +819,95 @@ dialog.confirm::backdrop { background: rgba(15, 20, 48, .45); backdrop-filter: b
 @media (max-width: 640px) { .show-sm { display: inline; } }
 .show-sm-flex { display: none; }
 @media (max-width: 640px) { .show-sm-flex { display: flex; margin-top: 6px; } }
+
+/* Messages: the conversation (their message, our replies) and the reply box. */
+.thread-col { display: grid; gap: 20px; min-width: 0; }
+.thread-col .card + .card { margin-top: 0; }
+.thread { display: grid; gap: 16px; }
+.bubble { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; background: var(--surface); }
+.bubble header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.bubble header > div { display: grid; min-width: 0; flex: 1; line-height: 1.35; }
+.bubble header b { font-size: 14px; }
+.bubble header small { font-size: 12px; color: var(--text-3); overflow-wrap: anywhere; }
+.bubble .avatar { width: 32px; height: 32px; font-size: 12px; }
+.bubble .message-body { background: none; border: 0; padding: 0; font-size: 14.5px; }
+.bubble-subject { margin: 0 0 6px; font-weight: 700; font-size: 14px; }
+.bubble-out { margin-left: clamp(0px, 6%, 48px); border-color: #d9d7ff; background: #fbfbff; box-shadow: inset 3px 0 0 var(--accent-2); }
+.avatar-us { background: linear-gradient(135deg, var(--accent-2), var(--accent)) !important; color: #fff !important; }
+.bubble-signature { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); white-space: pre-wrap; font-size: 12.5px; line-height: 1.6; color: var(--text-3); }
+
+.reply-to { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.reply-to-label { font-size: 13px; font-weight: 600; color: var(--text-2); }
+.reply-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: 16px; background: var(--accent-soft); font-size: 13.5px; color: var(--accent); max-width: 100%; min-width: 0; }
+.reply-chip-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; min-width: 0; }
+.reply-chip-text b { font-weight: 600; }
+.reply-chip small { font-weight: 500; color: var(--text-2); overflow-wrap: anywhere; }
+.reply-chip .avatar { width: 26px; height: 26px; border-radius: 50%; font-size: 11px; }
+#reply { scroll-margin-top: 96px; } /* stays clear of the sticky top bar when "Reply" jumps here */
+.reply-form textarea[name=body] { min-height: 200px; font-size: 15px; line-height: 1.7; }
+.signature-box { border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: #fbfbfd; }
+.signature-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.signature-preview { white-space: pre-wrap; font-size: 13px; line-height: 1.65; color: var(--text-2); }
+.signature-preview[hidden], .signature-editor[hidden] { display: none; }
+.signature-editor { display: grid; gap: 6px; }
+.signature-editor textarea { width: 100%; min-height: 110px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); font: 13.5px/1.6 var(--font); background: var(--surface); resize: vertical; }
+.signature-editor textarea:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 4px var(--accent-ring); }
+.reply-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+.row-title a + .status { margin-left: 8px; vertical-align: 1px; }
+.btn.is-busy { opacity: .75; cursor: progress; }
+@media (max-width: 640px) {
+    /* A one-line row description would widen the table past the phone: let it wrap. */
+    table.data .row-sub { white-space: normal; overflow-wrap: anywhere; max-width: none; }
+    .bubble-out { margin-left: 0; }
+    .reply-actions .help { display: none; } /* no Ctrl key on a phone */
+    .reply-actions .btn { width: 100%; }
+}
+
+/* Tracking: the date bar, the tabs and the tables. */
+.range-card { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; padding: 16px 20px; margin-bottom: 18px; }
+.range-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.range-field { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.range-field input { min-height: 40px; padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); font: 14px var(--font); color: var(--text); }
+.range-field input:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 4px var(--accent-ring); }
+.range-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.range-presets a { padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--text-2); background: var(--surface); transition: .15s; }
+.range-presets a:hover { border-color: #cfd0f5; color: var(--accent-2); }
+.range-presets a.on { border-color: var(--accent-2); background: var(--accent-soft); color: var(--accent); }
+.track-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; margin-bottom: 16px; }
+.track-tabs a { padding: 8px 18px; font-size: 14px; }
+.track-period { margin: 0; font-size: 13px; color: var(--text-3); }
+.track-period b { color: var(--text); font-weight: 600; }
+#detail { scroll-margin-top: 96px; }
+.track-table { margin-top: 20px; }
+.track-empty { margin: 0; padding: 26px 0; text-align: center; color: var(--text-3); font-size: 13.5px; }
+.track-thumb { width: 54px; height: 38px; flex: none; border-radius: 8px; object-fit: cover; background: var(--line-2); }
+.track-thumb-wide { width: 96px; height: 32px; }
+.data tr.is-selected td { background: var(--accent-soft); }
+.data tr.is-quiet .row-title > div > a { color: var(--text-2); }
+.data tr.is-quiet .num b { font-weight: 500; color: var(--text-3); }
+@media (max-width: 640px) {
+    .range-card { padding: 14px; }
+    .range-form { width: 100%; }
+    .range-field { flex: 1 1 130px; }
+    .range-field input { width: 100%; }
+    .range-form .btn { width: 100%; }
+    .track-tabs { display: flex; width: 100%; }
+    .track-tabs a { flex: 1; text-align: center; }
+    .track-table .card-head { flex-wrap: wrap; }
+    table.data .hide-sm-inline { display: none; }
+    .track-thumb { width: 44px; height: 32px; }
+    .track-thumb-wide { width: 66px; height: 22px; }
+}
+.track-table .row-sub a { font-weight: 500; color: var(--accent-2); }
+@media (max-width: 1180px) { .track-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .track-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+    /* Numbers in a compact 2 × 2; the table fits the phone, so every column stays on screen. */
+    .track-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .track-kpis .kpi { padding: 12px 14px; }
+    .track-kpis .kpi-icon { display: none; }
+    .track-kpis .kpi-value { font-size: 21px; overflow-wrap: anywhere; }
+    .track-kpis .kpi-note { font-size: 12px; flex-wrap: wrap; }
+    .track-table .row-title { min-width: 0; }
+    .track-thumb-wide { display: none; }
+}

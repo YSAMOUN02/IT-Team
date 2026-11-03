@@ -12,7 +12,7 @@
         $size = fn ($w, $h) => $w ? ' width="'.(int) $w.'" height="'.(int) $h.'"' : '';
     @endphp
     @if ($banner)
-        <aside class="promo promo-{{ str_replace('_', '-', $placement) }} {{ $adClass ?? '' }}" aria-label="{{ __('site.advertisement') }}">
+        <aside class="promo promo-{{ str_replace('_', '-', $placement) }} {{ $adClass ?? '' }}" data-spot="{{ $placement }}" aria-label="{{ __('site.advertisement') }}">
             <span class="promo-label">{{ __('site.advertisement') }}</span>
             @if ($banner['link'])
                 <a href="{{ route('promo.go', $placement) }}"{!! $banner['external'] ? ' target="_blank" rel="sponsored noopener"' : '' !!}>
@@ -28,7 +28,7 @@
             @endif
         </aside>
     @elseif ($adState === 'live')
-        <aside class="ad-slot ad-{{ $placement }} {{ $adClass ?? '' }}" aria-label="{{ __('site.advertisement') }}">
+        <aside class="ad-slot ad-{{ $placement }} {{ $adClass ?? '' }}" data-spot="{{ $placement }}" aria-label="{{ __('site.advertisement') }}">
             <span class="ad-label">{{ __('site.advertisement') }}</span>
             {!! \App\Support\Ads::slotHtml($placement) !!}
         </aside>
