@@ -13,6 +13,11 @@
 */
 
 return [
+
+    // Online payment before an admin has used the switch in Settings > Payments: off.
+    // (The test suite turns it on, so the payment tests run as on a live shop.)
+    'online_by_default' => (bool) env('ONLINE_PAYMENT_DEFAULT', false),
+
     'merchant_id' => env('PAYWAY_MERCHANT_ID'),
     'api_key' => env('PAYWAY_API_KEY'),
     'base_url' => rtrim(env('PAYWAY_BASE_URL', 'https://checkout-sandbox.payway.com.kh'), '/'),

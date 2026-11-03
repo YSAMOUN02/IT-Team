@@ -38,7 +38,8 @@ class StudentAreaTest extends TestCase
         $this->actingAs($student)->get('/my/courses')->assertOk()
             ->assertSee('Sok')
             ->assertSee('class="learn-stats"', false)
-            ->assertSee('class="card continue-card"', false)
+            // One course: its card shows the next lesson; the "pick up" banner would only repeat it.
+            ->assertDontSee('class="card continue-card"', false)
             ->assertSee('Create one') // next up
             ->assertSee('/learn/pivot-table/lessons/create', false)
             ->assertSee('33%');

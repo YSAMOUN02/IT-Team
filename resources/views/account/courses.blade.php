@@ -45,7 +45,8 @@
                     <a class="btn btn-primary" href="{{ route('courses.index') }}">{{ __('account.browse_courses') }}</a>
                 </div>
             @else
-                @if ($featured)
+                {{-- "Pick up where you left off" only helps with 2+ courses; with one, the card below says the same. --}}
+                @if ($featured && $enrollments->count() > 1)
                     @php
                         ['course' => $fCourse, 'progress' => $fProgress, 'next' => $fNext, 'lastActive' => $fLast] = $featured;
                     @endphp

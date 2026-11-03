@@ -104,6 +104,15 @@ class OwnBannerAdsTest extends TestCase
         $this->assertSame('placeholder', Ads::state('footer'));
     }
 
+    public function test_visitors_never_see_an_empty_ad_box_but_admins_do(): void
+    {
+        Setting::put(['ad_header_enabled' => '1', 'ad_header_type' => 'image', 'ad_footer_enabled' => '1', 'ad_footer_type' => 'image']);
+
+        $this->get('/courses')->assertOk()->assertDontSee('ad-placeholder', false);
+        $this->actingAs(User::factory()->create())->get('/courses')->assertDontSee('ad-placeholder', false);
+        $this->actingAs($this->admin())->get('/courses')->assertSee('ad-placeholder', false);
+    }
+
     public function test_bad_files_and_links_are_refused(): void
     {
         $this->actingAs($this->admin())->from('/admin/ads')->put('/admin/ads', [

@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @section('title', 'Students')
-@section('subtitle', 'Student accounts, with their courses and payments. Admin accounts are under Users.')
+@section('subtitle', 'Student accounts, with their courses and payments. Admin accounts are under Admin users.')
 @section('crumbs')<span aria-hidden="true">/</span><span>Sales</span><span aria-hidden="true">/</span><span>Students</span>@endsection
 
 @section('actions')
@@ -31,9 +31,18 @@
         @else
             <div class="table-wrap">
                 <table class="data">
-                    <thead><tr><th>Student</th><th>Phone</th><th>Courses</th><th>Paid orders</th><th>Joined</th></tr></thead>
+                    <thead><tr><th>Student</th><th class="hide-sm">Phone</th><th class="hide-sm">Courses</th><th class="hide-sm">Paid orders</th><th class="hide-sm">Joined</th></tr></thead>
                     <tbody>
                     @foreach ($students as $student)
+                        @php
+                            // Green: can open it now · red: turned off by an admin · grey: access ended.
+                            $chips = $student->enrollments->filter(fn ($e) => $e->course)->map(fn ($enrollment) => [...match (true) {
+                                (bool) $enrollment->disabled_at => ['status-blocked', 'Turned off '.$enrollment->disabled_at->format('d M Y')],
+                                $enrollment->source === 'certificate' => ['status-off', 'Certificate only'],
+                                ! $enrollment->isActive() => ['status-off', 'Ended '.$enrollment->expires_at?->format('d M Y')],
+                                default => ['status-on', $enrollment->expires_at ? 'Until '.$enrollment->expires_at->format('d M Y') : 'Lifetime'],
+                            }, $enrollment->course->title]);
+                        @endphp
                         <tr>
                             <td>
                                 <div class="row-title">
@@ -41,31 +50,30 @@
                                     <div>
                                         <a href="{{ route('admin.students.show', $student) }}">{{ $student->name }}</a>
                                         @if ($student->disabled_at)<span class="status status-blocked">Account off</span>@endif
-                                        <span class="row-sub">{{ $student->email }}</span>
+                                        <span class="row-sub">{{ $student->email }}@if ($student->phone)<span class="show-sm"> · {{ $student->phone }}</span>@endif</span>
+                                        {{-- Phones: the courses sit under the name instead of in their own column. --}}
+                                        @if ($chips->isNotEmpty())
+                                            <div class="course-chips show-sm-flex">
+                                                @foreach ($chips as [$chipClass, $when, $title])
+                                                    <span class="status {{ $chipClass }}" title="{{ $when }}">{{ $title }}</span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </td>
-                            <td class="num">{{ $student->phone ?: '—' }}</td>
-                            <td>
-                                {{-- Green: can open it now · red: turned off by an admin · grey: access ended. --}}
+                            <td class="num hide-sm">{{ $student->phone ?: '—' }}</td>
+                            <td class="hide-sm">
                                 <div class="course-chips">
-                                    @forelse ($student->enrollments->filter(fn ($e) => $e->course) as $enrollment)
-                                        @php
-                                            [$class, $when] = match (true) {
-                                                (bool) $enrollment->disabled_at => ['status-blocked', 'Turned off '.$enrollment->disabled_at->format('d M Y')],
-                                                $enrollment->source === 'certificate' => ['status-off', 'Certificate only'],
-                                                ! $enrollment->isActive() => ['status-off', 'Ended '.$enrollment->expires_at?->format('d M Y')],
-                                                default => ['status-on', $enrollment->expires_at ? 'Until '.$enrollment->expires_at->format('d M Y') : 'Lifetime'],
-                                            };
-                                        @endphp
-                                        <span class="status {{ $class }}" title="{{ $when }}">{{ $enrollment->course->title }}</span>
+                                    @forelse ($chips as [$chipClass, $when, $title])
+                                        <span class="status {{ $chipClass }}" title="{{ $when }}">{{ $title }}</span>
                                     @empty
                                         <span class="muted">—</span>
                                     @endforelse
                                 </div>
                             </td>
-                            <td class="num">{{ $student->orders_count }}</td>
-                            <td class="num">{{ $student->created_at->format('d M Y') }}</td>
+                            <td class="num hide-sm">{{ $student->orders_count }}</td>
+                            <td class="num hide-sm">{{ $student->created_at->format('d M Y') }}</td>
                         </tr>
                     @endforeach
                     </tbody>

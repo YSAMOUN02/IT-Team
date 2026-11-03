@@ -34,7 +34,7 @@ class StudentController extends Controller
     /** Add a student by hand (e.g. signed up at the office). Admin accounts stay under Admin > Users. */
     public function create()
     {
-        return view('admin.students.create', ['courses' => Course::orderBy('title')->get(['id', 'title'])]);
+        return view('admin.students.create', ['courses' => Course::with('plans')->orderBy('title')->get()]);
     }
 
     public function store(Request $request)
@@ -53,11 +53,12 @@ class StudentController extends Controller
         ], ['email.unique' => 'A student or admin already uses this email.']);
 
         $course = Course::find($data['course_id'] ?? null);
+        $lifetime = $request->boolean('lifetime');
         // Account and course together, or neither: no half-made account whose password nobody saw.
-        [$student, $password] = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $course) {
+        [$student, $password] = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $course, $lifetime) {
             [$student, $password] = User::createStudent($data['name'], $data['email'], $data['phone'] ?? null, $data['password'] ?? null);
             if ($course) {
-                $days = $data['days'] ?? $course->plans()->first()?->days;
+                $days = $course->manualAccessDays($data['days'] ?? null, $lifetime);
                 \App\Models\Invoice::forManualAccess(Enrollment::grant($student, $course, $days, 'manual'), $days, (float) ($data['amount'] ?? 0), $data['payment_method'] ?? null, $data['invoice_note'] ?? null);
             }
 
@@ -88,7 +89,7 @@ class StudentController extends Controller
             'attempts' => QuizAttempt::where('user_id', $user->id)->with('quiz.course:id,title')->latest('started_at')->latest('id')->take(10)->get(),
             'attemptCount' => QuizAttempt::where('user_id', $user->id)->count(),
             'invoices' => $user->invoices()->latest('issued_at')->latest('id')->get(),
-            'courses' => Course::orderBy('title')->get(),
+            'courses' => Course::with('plans')->orderBy('title')->get(),
         ]);
     }
 
@@ -104,7 +105,8 @@ class StudentController extends Controller
         ]);
 
         $course = Course::findOrFail($data['course_id']);
-        \App\Models\Invoice::forManualAccess(Enrollment::grant($user, $course, $data['days'] ?? null, 'manual'), $data['days'] ?? null, (float) ($data['amount'] ?? 0), $data['payment_method'] ?? null, $data['invoice_note'] ?? null);
+        $days = $course->manualAccessDays($data['days'] ?? null, $request->boolean('lifetime'));
+        \App\Models\Invoice::forManualAccess(Enrollment::grant($user, $course, $days, 'manual'), $days, (float) ($data['amount'] ?? 0), $data['payment_method'] ?? null, $data['invoice_note'] ?? null);
         $mailed = $request->boolean('send_email') ? CourseAccess::sendTo($user, $course) : null;
 
         return back()->with('status', "Access to {$course->title} given.".CourseAccess::note($mailed));

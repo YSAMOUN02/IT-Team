@@ -69,6 +69,10 @@ class SettingController extends Controller
                     }
                     continue;
                 }
+                if ($meta['type'] === 'toggle') {
+                    $values[$key] = $request->boolean("settings.$key") ? '1' : '0';
+                    continue;
+                }
                 $values[$key] = $request->input("settings.$key");
             }
         }

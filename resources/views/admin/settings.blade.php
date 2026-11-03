@@ -20,6 +20,11 @@
                                 @elseif ($meta['type'] === 'image')
                                     @include('admin.fields.image', ['name' => "uploads[$key]", 'remove' => "remove[$key]", 'label' => $meta['label'], 'value' => $values[$key] ?? null,
                             'formats' => 'JPG, PNG, WebP, GIF, SVG or ICO', 'accept' => \App\Support\Media::accept([...\App\Support\Media::IMAGE_TYPES, 'ico'])])
+                                @elseif ($meta['type'] === 'toggle')
+                                    <div class="field">
+                                        <input type="hidden" name="settings[{{ $key }}]" value="0">
+                                        <label class="check setting-toggle"><input type="checkbox" name="settings[{{ $key }}]" value="1" @checked(($values[$key] ?? $meta['default'] ?? '0') === '1')> <span>{{ $meta['label'] }}</span></label>
+                                    </div>
                                 @elseif ($meta['type'] === 'textarea')
                                     @include('admin.fields.textarea', ['name' => "settings[$key]", 'label' => $meta['label'], 'value' => $values[$key] ?? null, 'rows' => 3])
                                 @else

@@ -1,4 +1,4 @@
-{{-- @include('admin.partials.icon', ['name' => 'home']) - stroke icons in the style of the admin. --}}
+{{-- @include('admin.partials.icon', ['name' => 'home']) - stroke icons in the style of the admin. Optional $iconClass (not $class: a page's own $class would leak in). --}}
 @php
     $paths = [
         'home' => '<path d="M4 11.5 12 5l8 6.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/>',
@@ -37,4 +37,4 @@
         'grid' =>'<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 3.5v17M14.5 3.5v17"/>',
     ];
 @endphp
-<svg viewBox="0 0 24 24" aria-hidden="true" @isset($class) class="{{ $class }}" @endisset>{!! $paths[$name] ?? $paths['grid'] !!}</svg>
+<svg viewBox="0 0 24 24" aria-hidden="true" @isset($iconClass) class="{{ $iconClass }}" @endisset>{!! $paths[$name] ?? $paths['grid'] !!}</svg>

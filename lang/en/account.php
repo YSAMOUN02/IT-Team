@@ -353,4 +353,18 @@ return [
     'khqr_pay_to' => 'Pay to',
     'khqr_test' => 'Test: act as paid (this computer only)',
     'khqr_review_text' => 'Thanks, we got your note. Our team is checking the payment and will open the course for you shortly (you will get an email).',
+    // Online payment switched off
+    'contact_to_buy' => 'Contact us to enroll',
+    'payments_off_text' => 'Online payment is not open yet. Message us on Telegram to enroll and pay, and we will open the course for you.',
+    'payments_off_step1' => 'Message us on Telegram with the course and plan you want',
+    'payments_off_step2' => 'Pay the way we tell you (ABA / cash)',
+    'payments_off_step3' => 'We open the course and email you your sign-in',
+    'contact_telegram' => 'Contact on Telegram',
+    'payments_off_note' => 'Tell us the course “:course” and your email so we can open it quickly.',
+    // Short tab labels (My account)
+    'tab_courses' => 'Courses',
+    'tab_orders' => 'Orders',
+    'tab_invoices' => 'Invoices',
+    'tab_profile' => 'Profile',
+    'view' => 'View',
 ];

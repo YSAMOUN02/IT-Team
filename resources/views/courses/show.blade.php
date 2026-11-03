@@ -102,12 +102,15 @@
                                 </span>
                             </label>
                         @endforeach
-                        <button class="btn btn-primary btn-block btn-lg">{{ __('account.buy_now') }}</button>
+                        <button class="btn btn-primary btn-block btn-lg">{{ \App\Payments\OnlinePayment::enabled() ? __('account.buy_now') : __('account.contact_to_buy') }}</button>
                     </form>
-                    <p class="pay-badges" aria-label="{{ __('account.payment_method') }}">
-                        <span>VISA</span><span>Mastercard</span><span>UnionPay</span><span>ABA KHQR</span>
-                    </p>
-                    <a class="btn btn-outline btn-block" href="{{ $course->cta_url ? link_url($course->cta_url) : '#contact-form' }}">{{ $course->cta_label ?: __('site.contact_us') }}</a>
+                    @if (\App\Payments\OnlinePayment::enabled())
+                        <p class="pay-badges" aria-label="{{ __('account.payment_method') }}">
+                            <span>VISA</span><span>Mastercard</span><span>UnionPay</span><span>ABA KHQR</span>
+                        </p>
+                        {{-- While payment is off, the main button already leads to "contact us": no second one. --}}
+                        <a class="btn btn-outline btn-block" href="{{ $course->cta_url ? link_url($course->cta_url) : '#contact-form' }}">{{ $course->cta_label ?: __('site.contact_us') }}</a>
+                    @endif
                 @else
                     <a class="btn btn-primary btn-block" href="{{ $course->cta_url ? link_url($course->cta_url) : '#contact-form' }}">{{ $course->cta_label ?: __('site.contact_us') }}</a>
                 @endif

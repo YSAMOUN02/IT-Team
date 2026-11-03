@@ -131,12 +131,12 @@ class AdminUsersAndStudentsTest extends TestCase
         $course = Course::create(['title' => 'Pivot Table', 'slug' => 'pivot-table', 'is_published' => true]);
         $page = "/admin/courses/{$course->id}/students";
 
-        $this->actingAs($admin)->get($page)->assertSee('<datalist id="pickable-students">', false)->assertSee('<option value="dara@example.com">Sok Dara</option>', false);
+        $this->actingAs($admin)->get($page)->assertSee('data-grant-search', false)->assertSee('"name":"Sok Dara","email":"dara@example.com"', false);
 
         $this->from($page)->post($page, ['email' => 'dara@example.com'])->assertSessionHasNoErrors();
         $this->assertSame(1, $dara->enrollments()->count());
         // Already enrolled: no longer offered.
-        $this->get($page)->assertDontSee('<option value="dara@example.com">', false);
+        $this->get($page)->assertDontSee('"email":"dara@example.com"', false);
 
         $this->from($page)->post($page, ['email' => 'new@example.com'])
             ->assertSessionHasErrors(['name' => 'No account uses that email yet. Type the student’s name to create one.']);
@@ -204,9 +204,30 @@ class AdminUsersAndStudentsTest extends TestCase
         // Access ran out: offered in the list again.
         $dara = User::factory()->create(['name' => 'Sok Dara', 'email' => 'dara@example.com']);
         \App\Models\Enrollment::grant($dara, $course, 30, 'manual');
-        $this->get($page)->assertDontSee('<option value="dara@example.com">', false);
+        $this->get($page)->assertDontSee('"email":"dara@example.com"', false);
         $dara->enrollments()->update(['expires_at' => now()->subDay()]);
-        $this->get($page)->assertSee('<option value="dara@example.com">Sok Dara</option>', false);
+        // Back in the list, marked as having had the course before.
+        $this->get($page)->assertSee('"name":"Sok Dara","email":"dara@example.com","phone":"","initials":"SD","renew":true', false);
+    }
+
+    public function test_a_lifetime_plan_button_gives_access_without_an_end_date(): void
+    {
+        $admin = $this->admin();
+        $dara = User::factory()->create(['email' => 'dara@example.com']);
+        $course = Course::create(['title' => 'Pivot Table', 'slug' => 'pivot-table', 'is_published' => true]);
+        $course->plans()->create(['days' => 90, 'price' => 19, 'position' => 1]);
+        $course->plans()->create(['days' => null, 'price' => 45, 'position' => 2]);
+        $page = "/admin/courses/{$course->id}/students";
+        $this->actingAs($admin)->get($page)->assertSee('<b>3 months</b>', false)->assertSee('<b>Lifetime</b>', false);
+
+        $this->from($page)->post($page, ['email' => 'dara@example.com', 'lifetime' => '1', 'amount' => 45, 'payment_method' => 'cash'])->assertSessionHasNoErrors();
+        $this->assertNull($dara->enrollments()->sole()->expires_at);
+        $this->assertNull($dara->invoices()->sole()->access_days);
+
+        // No plan picked and no days: the first plan's period, as before.
+        $other = User::factory()->create(['email' => 'lina@example.com']);
+        $this->post($page, ['email' => 'lina@example.com', 'lifetime' => '0']);
+        $this->assertSame(now()->addDays(90)->toDateString(), $other->enrollments()->sole()->expires_at->toDateString());
     }
 
     public function test_a_broken_mail_setup_does_not_stop_access_being_given(): void

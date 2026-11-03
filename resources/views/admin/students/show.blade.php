@@ -129,21 +129,27 @@
 
         <div class="form-side">
             <section class="card">
-                <div class="card-head"><div><h2>Give access</h2><p>E.g. paid in cash or a scholarship.</p></div></div>
-                <form class="card-body fields" method="post" action="{{ route('admin.students.grant', $student) }}">
+                <div class="card-head"><div><h2>Give access</h2><p>Paid in cash, by ABA, or a scholarship. Also turns a turned-off course back on.</p></div></div>
+                <form class="card-body grant" method="post" action="{{ route('admin.students.grant', $student) }}" data-access-form>
                     @csrf
-                    <div class="field">
-                        <label class="field-label" for="f-course"><span>Course</span></label>
-                        <select id="f-course" name="course_id" required>
+                    <div class="grant-step">
+                        <p class="grant-label"><span>1</span> Course</p>
+                        <select id="f-course" class="control" name="course_id" required aria-label="Course" data-course-select>
                             @foreach ($courses as $course)
-                                <option value="{{ $course->id }}">{{ $course->title }}</option>
+                                <option value="{{ $course->id }}" @selected((int) old('course_id') === $course->id)>{{ $course->title }}</option>
                             @endforeach
                         </select>
                     </div>
-                    @include('admin.fields.input', ['name' => 'days', 'label' => 'Days of access', 'type' => 'number', 'value' => '', 'placeholder' => 'lifetime', 'help' => 'Empty = lifetime. Adds to any access that is still running, and turns a turned-off course back on.'])
-                    @include('admin.students._payment-fields')
-                    <label class="check"><input type="checkbox" name="send_email" value="1" checked> Email the student (course link and sign-in)</label>
-                    <button class="btn btn-primary btn-block">@include('admin.partials.icon', ['name' => 'check']) Give access</button>
+                    <div class="grant-step">
+                        <p class="grant-label"><span>2</span> Access</p>
+                        @include('admin.students._access-length', ['planCourses' => $courses, 'formKey' => 'student'])
+                    </div>
+                    <div class="grant-step">
+                        <p class="grant-label"><span>3</span> Payment <small>shown on their invoice</small></p>
+                        @include('admin.students._payment-fields')
+                    </div>
+                    <label class="check grant-mail"><input type="checkbox" name="send_email" value="1" checked> Email the student the course link</label>
+                    <button class="btn btn-primary btn-block">@include('admin.partials.icon', ['name' => 'check']) Give access to {{ $student->name }}</button>
                 </form>
             </section>
 

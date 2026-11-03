@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AsksGuestsToSignIn;
 use App\Models\Course;
 use App\Models\Order;
 use App\Payments\Khqr;
+use App\Payments\OnlinePayment;
 use App\Payments\OrderProcessor;
 use App\Payments\PayWay;
 use Illuminate\Http\Request;
@@ -32,6 +33,13 @@ class CheckoutController extends Controller
 
         $plans = $course->plans;
         $selected = $plans->firstWhere('id', $request->integer('plan')) ?? $course->cheapestPlan();
+
+        // Online payment switched off by an admin: show the price and how to get in touch instead
+        // (no sign-in needed for that); an admin then gives the course by hand.
+        if (! OnlinePayment::enabled()) {
+            return view('checkout.contact', ['course' => $course, 'plans' => $plans, 'selected' => $selected,
+                'contactUrl' => OnlinePayment::contactUrl(), 'telegram' => OnlinePayment::contactIsTelegram()]);
+        }
 
         if (! $request->user()) {
             return $this->askToSignIn($request, $course, $selected);
@@ -61,6 +69,10 @@ class CheckoutController extends Controller
         abort_unless($course->isPurchasable(), 404);
         if ($request->user()->courseAccessOff($course)) {
             return redirect()->route('courses.show', $course->slug)->with('checkout_notice', __('account.access_off'));
+        }
+        // Online payment is off: no order is made, the checkout page says how to get in touch.
+        if (! OnlinePayment::enabled()) {
+            return redirect()->route('checkout.show', $course->slug);
         }
 
         $data = $request->validate([

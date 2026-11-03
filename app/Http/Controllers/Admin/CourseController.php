@@ -89,13 +89,13 @@ class CourseController extends Controller
         }
 
         // Account and course together, or neither: no half-made account whose password nobody saw.
-        [$user, $new] = \Illuminate\Support\Facades\DB::transaction(function () use ($user, $data, $course) {
+        $days = $course->manualAccessDays($data['days'] ?? null, $request->boolean('lifetime'));
+        [$user, $new] = \Illuminate\Support\Facades\DB::transaction(function () use ($user, $data, $course, $days) {
             $new = null;
             if (! $user) {
                 [$user, $password] = User::createStudent($data['name'], $data['email']);
                 $new = ['name' => $user->name, 'email' => $user->email, 'password' => $password];
             }
-            $days = $data['days'] ?? $course->plans->first()?->days;
             \App\Models\Invoice::forManualAccess(Enrollment::grant($user, $course, $days, 'manual'), $days, (float) ($data['amount'] ?? 0), $data['payment_method'] ?? null, $data['invoice_note'] ?? null);
 
             return [$user, $new];

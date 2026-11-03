@@ -25,6 +25,19 @@ class Course extends Model
         return $this->hasMany(CoursePlan::class)->orderBy('position')->orderBy('id');
     }
 
+    /**
+     * Days of access an admin gives by hand: the days typed, none for the "Lifetime" plan button,
+     * else the first plan's period (lifetime when the course has no plans). Same on every form.
+     */
+    public function manualAccessDays(?int $days, bool $lifetime = false): ?int
+    {
+        if ($days) {
+            return $days;
+        }
+
+        return $lifetime ? null : $this->plans->first()?->days;
+    }
+
     public function modules(): HasMany
     {
         return $this->hasMany(CourseModule::class)->orderBy('position')->orderBy('id');

@@ -57,7 +57,7 @@
                         @endforeach
                     </ul>
 
-                    @unless ($course->isFree())
+                    @unless ($course->isFree() || ! \App\Payments\OnlinePayment::enabled())
                         <p class="gate-secure">{{ __('account.secure_payment') }}</p>
                         <p class="pay-badges" aria-label="{{ __('account.payment_method') }}">
                             <span>ABA KHQR</span><span>VISA</span><span>Mastercard</span><span>UnionPay</span>

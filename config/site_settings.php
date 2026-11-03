@@ -49,6 +49,11 @@ return [
         'bing_site_verification' => ['type' => 'text', 'label' => 'Bing Webmaster verification code (optional)'],
     ]],
 
+    'payments' => ['label' => 'Payments', 'fields' => [
+        'online_payment' => ['type' => 'toggle', 'default' => '0', 'label' => 'Online payment (ABA PayWay and KHQR) is on. Off: the checkout page asks students to contact you (Telegram / phone) and admins give the course by hand (Course › Students › Give access).'],
+        'payment_contact_url' => ['type' => 'url', 'label' => 'Contact link to buy while online payment is off (empty = the Telegram link under Social media)'],
+    ]],
+
     'khqr' => ['label' => 'KHQR payment (Bakong)', 'fields' => [
         'khqr_account_id' => ['type' => 'text', 'label' => 'Bakong account ID that receives the money, e.g. teamit@aba (in your bank app: Bakong / KHQR profile). Empty = KHQR is not offered.'],
         'khqr_merchant_name' => ['type' => 'text', 'label' => 'Name shown in the bank app when paying (25 letters max, English)'],

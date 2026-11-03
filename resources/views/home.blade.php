@@ -36,7 +36,7 @@
         </div>
     </section>
 
-    @include('partials.ad', ['placement' => 'header', 'class' => 'container ad-below-hero'])
+    @include('partials.ad', ['placement' => 'header', 'adClass' => 'container ad-below-hero'])
 
     {{-- Courses --}}
     @if ($courses->isNotEmpty())
@@ -82,7 +82,7 @@
         </section>
     @endif
 
-    @include('partials.ad', ['placement' => 'home_middle', 'class' => 'container'])
+    @include('partials.ad', ['placement' => 'home_middle', 'adClass' => 'container'])
 
     {{-- Latest news --}}
     @if ($news->isNotEmpty())

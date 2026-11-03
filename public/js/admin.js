@@ -191,4 +191,156 @@
             hit.addEventListener('blur', () => { tip.hidden = true; });
         });
     });
+
+    // Course › Students › Give access: pick an existing student from a searchable list (or add a new
+    // one), pick a plan to fill days + amount, and the button says who gets the course.
+    $$('[data-grant]').forEach((form) => {
+        const people = JSON.parse($('[data-grant-people]', form)?.textContent || '[]');
+        const mode = $('[data-grant-mode]', form);
+        const emailHidden = $('[data-grant-email]', form);
+        const newName = $('[data-grant-new-name]', form);
+        const newEmail = $('[data-grant-new-email]', form);
+        const search = $('[data-grant-search]', form);
+        const list = $('[data-grant-list]', form);
+        const empty = $('[data-grant-empty]', form);
+        const picker = $('[data-grant-picker]', form);
+        const picked = $('[data-grant-picked]', form);
+        const submitText = $('[data-grant-submit-text]', form);
+        let active = 0;
+        let shown = [];
+
+        const label = () => {
+            const who = mode.value === 'new' ? newName.value.trim() : (people.find((p) => p.email === emailHidden.value)?.name || '');
+            submitText.textContent = who ? 'Give access to ' + who : 'Give access';
+        };
+
+        const setMode = (value) => {
+            mode.value = value;
+            $$('[data-grant-tab]', form).forEach((tab) => {
+                tab.classList.toggle('on', tab.dataset.grantTab === value);
+                tab.setAttribute('aria-selected', tab.dataset.grantTab === value ? 'true' : 'false');
+            });
+            $$('[data-grant-pane]', form).forEach((pane) => { pane.hidden = pane.dataset.grantPane !== value; });
+            // Only the visible "email" is sent.
+            emailHidden.disabled = value === 'new';
+            newEmail.disabled = newName.disabled = value !== 'new';
+            label();
+        };
+
+        const choose = (person) => {
+            emailHidden.value = person ? person.email : '';
+            picked.hidden = !person;
+            picker.hidden = !!person;
+            if (person) {
+                $('[data-picked-initials]', picked).textContent = person.initials;
+                $('[data-picked-name]', picked).textContent = person.name;
+                $('[data-picked-meta]', picked).textContent = [person.email, person.phone].filter(Boolean).join(' · ');
+            }
+            label();
+        };
+
+        const row = (person, index) => {
+            const li = document.createElement('li');
+            li.setAttribute('role', 'option');
+            li.className = 'picker-item' + (index === active ? ' active' : '');
+            li.innerHTML = '<span class="avatar"></span><span class="picker-text"><b></b><small></small></span>';
+            $('.avatar', li).textContent = person.initials;
+            $('b', li).textContent = person.name;
+            $('small', li).textContent = [person.email, person.phone].filter(Boolean).join(' · ');
+            if (person.renew) {
+                const tag = document.createElement('span');
+                tag.className = 'picker-tag';
+                tag.textContent = 'Had it before';
+                li.appendChild(tag);
+            }
+            li.addEventListener('mousedown', (e) => { e.preventDefault(); choose(person); });
+            return li;
+        };
+
+        const render = () => {
+            const q = search.value.trim().toLowerCase();
+            shown = people.filter((p) => !q || (p.name + ' ' + p.email + ' ' + p.phone).toLowerCase().includes(q)).slice(0, 50);
+            active = Math.min(active, Math.max(0, shown.length - 1));
+            list.replaceChildren(...shown.map(row));
+            empty.hidden = shown.length > 0;
+            list.hidden = shown.length === 0;
+            $('[data-grant-query]', form).textContent = search.value.trim();
+        };
+
+        search.addEventListener('input', () => { active = 0; render(); });
+        search.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                active = (active + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % Math.max(1, shown.length);
+                render();
+                list.children[active]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter') {
+                e.preventDefault(); // never submit half-filled
+                if (shown[active]) choose(shown[active]);
+            }
+        });
+        $('[data-grant-change]', form).addEventListener('click', () => { choose(null); search.focus(); render(); });
+
+        // "No match": carry what was typed over to the new-student form.
+        $('[data-grant-new]', form).addEventListener('click', () => {
+            const typed = search.value.trim();
+            setMode('new');
+            if (typed.includes('@')) newEmail.value = typed; else newName.value = typed;
+            (typed.includes('@') ? newName : newEmail).focus();
+        });
+        $$('[data-grant-tab]', form).forEach((tab) => tab.addEventListener('click', () => setMode(tab.dataset.grantTab)));
+        newName.addEventListener('input', label);
+
+        // Nothing picked yet: say so instead of letting the server answer.
+        form.addEventListener('submit', (e) => {
+            if (mode.value === 'existing' && !emailHidden.value) {
+                e.preventDefault();
+                search.focus();
+                picker.classList.add('shake');
+                setTimeout(() => picker.classList.remove('shake'), 500);
+            }
+        });
+
+        // Coming back with an error: show what was chosen.
+        if (emailHidden.value) choose(people.find((p) => p.email === emailHidden.value) || null);
+        render();
+        setMode(mode.value);
+    });
+
+    // Give access (course page, student page, Add student): plan buttons fill days + amount, a
+    // Lifetime plan sends lifetime=1, typing days un-picks the plan; the plans follow the course picked.
+    $$('[data-access-form]').forEach((form) => {
+        const days = $('[data-days]', form);
+        const lifetime = $('[data-lifetime]', form);
+        const amount = $('[name=amount]', form);
+        const course = $('[data-course-select]', form);
+        if (!days) return;
+        const unpick = () => $$('[data-plan]', form).forEach((chip) => { chip.classList.remove('on'); chip.setAttribute('aria-pressed', 'false'); });
+
+        $$('[data-plan]', form).forEach((chip) => chip.addEventListener('click', () => {
+            unpick();
+            chip.classList.add('on');
+            chip.setAttribute('aria-pressed', 'true');
+            days.value = chip.dataset.days || '';
+            lifetime.value = chip.dataset.days ? '0' : '1';
+            if (amount) amount.value = chip.dataset.price;
+            const method = $('[name=payment_method][value=' + (+chip.dataset.price === 0 ? 'free' : 'cash') + ']', form);
+            if (method) method.checked = true;
+        }));
+        days.addEventListener('input', () => { lifetime.value = '0'; unpick(); });
+
+        const showPlans = () => {
+            $$('[data-plans-for]', form).forEach((group) => { group.hidden = !!course && group.dataset.plansFor !== course.value; });
+            // "No course yet" (Add student): nothing to set for access or payment.
+            $$('[data-needs-course]', form).forEach((step) => { step.hidden = !!course && !course.value; });
+        };
+        course?.addEventListener('change', () => {
+            unpick();
+            days.value = '';
+            lifetime.value = '0';
+            if (amount) amount.value = '';
+            showPlans();
+        });
+        showPlans();
+    });
 })();

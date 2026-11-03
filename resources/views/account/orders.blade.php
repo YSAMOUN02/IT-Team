@@ -21,16 +21,17 @@
                 </div>
             @else
                 <div class="card table-card">
-                    <table class="simple-table">
+                    {{-- "stack": each row turns into a small card on phones. --}}
+                    <table class="simple-table stack">
                         <thead><tr><th>{{ __('account.order_number') }}</th><th>{{ __('account.course') }}</th><th>{{ __('account.amount') }}</th><th>{{ __('account.status') }}</th><th></th></tr></thead>
                         <tbody>
                         @foreach ($orders as $order)
                             <tr>
-                                <td class="mono">{{ $order->number }}<small>{{ $order->created_at->format('d/m/Y H:i') }}</small></td>
-                                <td>{{ $order->course_title }}</td>
-                                <td>{{ $order->formattedAmount() }}</td>
-                                <td><span class="pill pill-{{ $order->status }}">{{ __('account.status_'.$order->status) }}</span></td>
-                                <td><a href="{{ route('orders.show', $order) }}">→</a></td>
+                                <td class="mono" data-label="{{ __('account.order_number') }}">{{ $order->number }}<small>{{ $order->created_at->format('d/m/Y H:i') }}</small></td>
+                                <td class="cell-main">{{ $order->course_title }}</td>
+                                <td data-label="{{ __('account.amount') }}"><b>{{ $order->formattedAmount() }}</b></td>
+                                <td class="cell-status"><span class="pill pill-{{ $order->status }}">{{ __('account.status_'.$order->status) }}</span></td>
+                                <td class="cell-action"><a href="{{ route('orders.show', $order) }}">{{ __('account.view') }} →</a></td>
                             </tr>
                         @endforeach
                         </tbody>

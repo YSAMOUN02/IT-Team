@@ -367,7 +367,8 @@ a.grade:hover { filter: brightness(.95); }
 .counter.over { color: var(--danger); }
 .help { font-size: 12.5px; color: var(--text-3); }
 .control, .field input[type=text], .field input[type=email], .field input[type=url], .field input[type=number],
-.field input[type=password], .field input[type=datetime-local], .field textarea, .field select {
+.field input[type=password], .field input[type=datetime-local], .field input[type=tel], .field input[type=date], .field input[type=time], .field input[type=search],
+.field textarea, .field select {
     width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);
     font: 14.5px/1.5 var(--font); color: var(--text); transition: border-color .15s, box-shadow .15s;
 }
@@ -604,9 +605,12 @@ dialog.confirm::backdrop { background: rgba(15, 20, 48, .45); backdrop-filter: b
 
 /* ------------------------------------------------------------ price plans */
 .free-switch { padding: 14px; border-radius: 12px; background: #f7fbf8; border: 1px solid #d9efe2; }
-.plan-rows { display: grid; gap: 12px; margin-bottom: 12px; }
+.plan-rows { display: grid; gap: 12px; margin-bottom: 12px; container-type: inline-size; }
 .plan-row { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #fcfcfe; }
-.plan-grid { display: grid; grid-template-columns: 1.2fr 1fr .8fr 1fr 1fr 1.2fr; gap: 10px; }
+/* Three per line (period · price · discount, then the discount dates · name); all six only where the column is wide. */
+.plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@container (min-width: 960px) { .plan-grid { grid-template-columns: 1.2fr 1fr .8fr 1fr 1fr 1.2fr; } }
+@container (max-width: 420px) { .plan-grid { grid-template-columns: 1fr 1fr; } }
 .plan-grid .field { gap: 5px; }
 .plan-grid .field-label { font-size: 12px; color: var(--text-2); }
 .plan-grid input, .plan-grid select { width: 100%; min-height: 38px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: #fff; }
@@ -615,9 +619,8 @@ dialog.confirm::backdrop { background: rgba(15, 20, 48, .45); backdrop-filter: b
 .plan-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line-2); }
 .plan-preview { font-size: 13.5px; font-weight: 600; color: var(--text-2); }
 .plan-preview.is-discount { color: var(--good); }
+.plan-preview.is-warning { color: var(--warn); }
 .disc-pill { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; background: #fde8ec; color: #b4233e; font: 600 11.5px var(--mono); }
-@media (max-width: 1100px) { .plan-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 640px) { .plan-grid { grid-template-columns: 1fr 1fr; } }
 
 /* ------------------------------------------------------------ social accounts */
 .social-rows { display: grid; gap: 8px; }
@@ -679,7 +682,9 @@ dialog.confirm::backdrop { background: rgba(15, 20, 48, .45); backdrop-filter: b
 /* ------------------------------------------------------------ responsive */
 @media (max-width: 1180px) {
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .dash-grid, .form-grid { grid-template-columns: 1fr; }
+    /* minmax(0, …): a wide table must scroll inside its card, not stretch the column off the screen. */
+    .dash-grid, .form-grid { grid-template-columns: minmax(0, 1fr); }
+    .form-grid > *, .dash-grid > * { min-width: 0; }
     .form-side { position: static; }
 }
 @media (max-width: 900px) {
@@ -750,3 +755,67 @@ dialog.confirm::backdrop { background: rgba(15, 20, 48, .45); backdrop-filter: b
 .new-login-list { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; font-size: 14px; }
 .new-login-list dt { color: var(--text-3); }
 .new-login-list dd { margin: 0; user-select: all; word-break: break-all; }
+
+/* Give access (Course › Students): who → how long → payment, as three numbered steps. */
+.grant { display: grid; gap: 22px; }
+.grant-step { display: grid; gap: 12px; }
+.grant-step + .grant-step { padding-top: 20px; border-top: 1px solid var(--line-2); }
+.grant-label { margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; color: var(--text); }
+.grant-label span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-2); font-size: 12px; }
+.grant-label small { font-weight: 500; color: var(--text-3); }
+.grant-tabs { display: flex; }
+.grant-tabs button { flex: 1; padding: 7px 10px; border: 0; border-radius: 7px; background: none; font: 600 13px var(--font); color: var(--text-2); cursor: pointer; }
+.grant-tabs button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.grant-pane { display: grid; gap: 14px; }
+.grant-pane[hidden] { display: none; }
+
+.picker { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+.picker:focus-within { border-color: var(--accent-2); box-shadow: 0 0 0 4px var(--accent-ring); }
+.picker[hidden] { display: none; }
+.picker-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line-2); }
+.picker-search svg { width: 16px; height: 16px; color: var(--text-3); flex: none; }
+.picker-search input { flex: 1; min-width: 0; border: 0; outline: 0; padding: 11px 0; font: inherit; background: none; color: var(--text); }
+.picker-list { list-style: none; margin: 0; padding: 4px; max-height: 248px; overflow-y: auto; }
+.picker-list[hidden] { display: none; }
+.picker-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; }
+.picker-item:hover, .picker-item.active { background: var(--accent-soft); }
+.picker-item .avatar, .picked .avatar { width: 32px; height: 32px; font-size: 12px; }
+.picker-text, .picked-text { display: grid; min-width: 0; flex: 1; line-height: 1.35; }
+.picker-text b, .picked-text b { font-size: 13.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picker-text small, .picked-text small { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picker-tag { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); font-size: 11px; font-weight: 600; }
+.picker-empty { padding: 16px; text-align: center; color: var(--text-2); font-size: 13px; }
+.picker-empty p { margin: 0 0 10px; }
+.picker-empty[hidden] { display: none; }
+.picker-count { margin: 0; font-size: 12px; color: var(--text-3); }
+.picked { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--accent-2); border-radius: var(--radius-sm); background: var(--accent-soft); }
+.picked[hidden] { display: none; }
+.shake { animation: shake .4s; border-color: var(--danger) !important; }
+@keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+.plan-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.plan-chip { display: grid; gap: 2px; padding: 10px 8px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; text-align: center; font: inherit; transition: border-color .15s, background .15s; }
+.plan-chip b { font-size: 13px; color: var(--text); }
+.plan-chip small { font-size: 12px; color: var(--text-3); }
+.plan-chip:hover { border-color: #cfd0f5; }
+.plan-chip.on { border-color: var(--accent-2); background: var(--accent-soft); }
+.plan-chip.on small { color: var(--accent-2); font-weight: 600; }
+
+.pay-fields { display: grid; gap: 16px; }
+.pill-choice { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill-choice label { cursor: pointer; }
+.pill-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.pill-choice span { display: block; padding: 7px 12px; border: 1.5px solid var(--line); border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-2); transition: .15s; }
+.pill-choice input:checked + span { border-color: var(--accent-2); background: var(--accent-soft); color: var(--accent); }
+.pill-choice input:focus-visible + span { box-shadow: 0 0 0 4px var(--accent-ring); }
+.grant-mail { line-height: 1.4; }
+.grant [hidden] { display: none !important; }
+
+/* Phones: columns that matter less step aside (the row still shows the essentials). */
+@media (max-width: 640px) {
+    table.data .hide-sm { display: none; }
+}
+.show-sm { display: none; }
+@media (max-width: 640px) { .show-sm { display: inline; } }
+.show-sm-flex { display: none; }
+@media (max-width: 640px) { .show-sm-flex { display: flex; margin-top: 6px; } }

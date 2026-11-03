@@ -116,8 +116,12 @@
         if (pct > 0) {
             text += live ? ` (−${pct}%, was ${money(price)})` : ` · ${money(final)} (−${pct}%) ${from && from > today ? 'from ' + from : 'ended'}`;
         }
+        // A 100% discount gives the plan away to anyone: say so plainly, in orange.
+        const free = live && final <= 0;
+        if (free) text = `⚠ Free for anyone${to ? ' until ' + to : ''}: a 100% discount${to ? '' : ' with no end date'}. Lower it if this is not meant.`;
         out.textContent = text;
-        out.classList.toggle('is-discount', live);
+        out.classList.toggle('is-discount', live && !free);
+        out.classList.toggle('is-warning', free);
     };
     const renumber = () => list.querySelectorAll('[data-plan-row]').forEach((row, i) => {
         row.querySelectorAll('[name^="plans["]').forEach((el) => { el.name = el.name.replace(/plans\[\d+]/, `plans[${i}]`); });

@@ -177,10 +177,10 @@
 <main id="main">
     {{-- On the home page this ad slot sits under the hero instead (see home.blade.php). --}}
     @unless (request()->routeIs('home'))
-        @include('partials.ad', ['placement' => 'header', 'class' => 'container'])
+        @include('partials.ad', ['placement' => 'header', 'adClass' => 'container'])
     @endunless
     @yield('content')
-    @include('partials.ad', ['placement' => 'footer', 'class' => 'container'])
+    @include('partials.ad', ['placement' => 'footer', 'adClass' => 'container'])
 </main>
 
 <footer class="site-footer">

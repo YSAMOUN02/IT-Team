@@ -120,6 +120,17 @@ class Ads
         return self::isLive($placement) ? 'live' : 'placeholder';
     }
 
+    /**
+     * What a page shows: like state(), but visitors never see an empty "ad space" box (it looks
+     * unfinished above a course); admins still do, so they can see where an ad would go.
+     */
+    public static function shownState(string $placement): string
+    {
+        $state = self::state($placement);
+
+        return $state === 'placeholder' && ! auth()->user()?->isAdmin() ? 'off' : $state;
+    }
+
     /** Box size the placeholder mimics, from the placement's format. */
     public static function format(string $placement): string
     {
