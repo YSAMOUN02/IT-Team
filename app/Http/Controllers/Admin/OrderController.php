@@ -41,6 +41,17 @@ class OrderController extends Controller
     }
 
     /** Money given back (in the PayWay portal, or cash): the course access it bought goes too. */
+    /** A KHQR payment the admin found in the bank app: give access, invoice and receipt like any paid order. */
+    public function confirm(Request $request, Order $order, \App\Payments\OrderProcessor $processor)
+    {
+        abort_unless($order->gateway === 'khqr' && in_array($order->status, ['pending', 'review', 'cancelled'], true), 422);
+
+        $processor->apply($order, ['status' => 'paid', 'gateway_status' => 'CONFIRMED_BY_ADMIN', 'amount' => null, 'currency' => null,
+            'apv' => 'ADMIN-'.$request->user()->id, 'payload' => ['confirmed_by' => $request->user()->email]]);
+
+        return back()->with('status', 'Payment confirmed: the student can open the course now and was emailed a receipt.');
+    }
+
     public function refund(Order $order)
     {
         abort_unless($order->isPaid(), 422);

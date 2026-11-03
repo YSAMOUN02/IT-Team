@@ -30,6 +30,25 @@ class Order extends Model
         'access_days' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        // Every paid order gets one invoice, whatever marked it paid (PayWay, a recheck, an admin); a refund marks it refunded.
+        static::saved(function (Order $order) {
+            if ($order->wasChanged('status') || $order->wasRecentlyCreated) {
+                if ($order->status === 'paid') {
+                    Invoice::forOrder($order);
+                } elseif ($order->status === 'refunded') {
+                    Invoice::where('order_id', $order->id)->update(['status' => 'refunded']);
+                }
+            }
+        });
+    }
+
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'number';

@@ -39,7 +39,7 @@
                                         @include('admin.fields.textarea', ['name' => $name, 'label' => $meta['label'], 'value' => $value, 'rows' => 3])
                                         @break
                                     @case('html')
-                                        @include('admin.fields.textarea', ['name' => $name, 'label' => $meta['label'], 'value' => $value, 'rows' => 7, 'help' => 'Basic HTML is allowed: <p>, <strong>, <br>, <a>.'])
+                                        @include('admin.fields.textarea', ['name' => $name, 'label' => $meta['label'], 'value' => $value, 'rows' => 7, 'editor' => true])
                                         @break
                                     @default
                                         @include('admin.fields.input', ['name' => $name, 'label' => $meta['label'], 'value' => $value, 'help' => $meta['type'] === 'url' ? 'A page on this site, e.g. /contact, or a full https:// link.' : null])

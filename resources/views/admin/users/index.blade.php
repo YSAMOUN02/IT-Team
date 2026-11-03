@@ -1,10 +1,10 @@
 @extends('admin.layout')
 
-@section('title', 'Users')
+@section('title', 'Admin users')
 @section('subtitle', 'People who can sign in to this admin. Students are under Students.')
-@section('crumbs')<span aria-hidden="true">/</span><span>System</span><span aria-hidden="true">/</span><span>Users</span>@endsection
+@section('crumbs')<span aria-hidden="true">/</span><span>System</span><span aria-hidden="true">/</span><span>Admin users</span>@endsection
 @section('actions')
-    <a class="btn btn-primary" href="{{ route('admin.users.create') }}">@include('admin.partials.icon', ['name' => 'plus']) New user</a>
+    <a class="btn btn-primary" href="{{ route('admin.users.create') }}">@include('admin.partials.icon', ['name' => 'plus']) New admin</a>
 @endsection
 
 @section('content')

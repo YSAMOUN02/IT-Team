@@ -10,10 +10,18 @@
     <span aria-hidden="true">/</span><span>{{ $order->number }}</span>
 @endsection
 @section('actions')
-    @if (in_array($order->status, ['pending', 'review']))
+    @if ($order->gateway === 'khqr' && in_array($order->status, ['pending', 'review', 'cancelled']))
+        {{-- KHQR without a Bakong token: the admin checks the bank app for this amount and order number. --}}
+        <form method="post" action="{{ route('admin.orders.confirm', $order) }}"
+              data-confirm="Did {{ $order->formattedAmount() }} for order {{ $order->number }} arrive in the bank account? The student then gets the course, an invoice and a receipt email.">
+            @csrf
+            <button class="btn btn-primary">@include('admin.partials.icon', ['name' => 'check']) Confirm payment received</button>
+        </form>
+    @endif
+    @if (in_array($order->status, ['pending', 'review']) && ($order->gateway !== 'khqr' || config('khqr.token')))
         <form method="post" action="{{ route('admin.orders.recheck', $order) }}">
             @csrf
-            <button class="btn btn-primary">@include('admin.partials.icon', ['name' => 'search']) Check with PayWay</button>
+            <button class="btn btn-ghost">@include('admin.partials.icon', ['name' => 'search']) Check with {{ $order->gateway === 'khqr' ? 'Bakong' : 'PayWay' }}</button>
         </form>
     @endif
     @if ($order->user && ! $order->user->isAdmin())
@@ -43,9 +51,9 @@
                         <dt>Amount</dt><dd><b>{{ $order->formattedAmount() }}</b>@if ($order->discount_percent) <span class="muted">(−{{ $order->discount_percent }}% from {{ money_format_simple((float) $order->original_amount, $order->currency) }})</span>@endif</dd>
                         <dt>Plan</dt><dd>{{ $order->plan_label ?? '—' }}</dd>
                         <dt>Access bought</dt><dd>{{ $order->access_days ? $order->access_days.' days' : 'Lifetime' }}</dd>
-                        <dt>Payment method</dt><dd>{{ ['cards' => 'Card', 'abapay_khqr' => 'ABA KHQR', '' => 'Chosen on PayWay'][$order->payment_option ?? ''] ?? $order->payment_option }}</dd>
-                        <dt>Gateway</dt><dd>{{ $order->gateway === 'test' ? 'Test payment (no real money)' : 'ABA PayWay' }}</dd>
-                        <dt>PayWay status</dt><dd>{{ $order->gateway_status ?? '—' }}</dd>
+                        <dt>Payment method</dt><dd>{{ ['cards' => 'Card', 'abapay_khqr' => 'ABA KHQR', 'khqr' => 'KHQR (Bakong, any bank app)', '' => 'Chosen on PayWay'][$order->payment_option ?? ''] ?? $order->payment_option }}</dd>
+                        <dt>Gateway</dt><dd>{{ ['test' => 'Test payment (no real money)', 'khqr' => 'KHQR to our Bakong account', 'free' => 'Free'][$order->gateway] ?? 'ABA PayWay' }}</dd>
+                        <dt>Payment status</dt><dd>{{ $order->gateway_status ?? '—' }}</dd>
                         <dt>Approval code</dt><dd>{{ $order->apv ?? '—' }}</dd>
                         <dt>Paid at</dt><dd>{{ $order->paid_at?->format('d M Y, H:i') ?? '—' }}</dd>
                         <dt>Last checked</dt><dd>{{ $order->checked_at?->diffForHumans() ?? 'never' }}</dd>

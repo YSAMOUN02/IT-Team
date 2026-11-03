@@ -64,6 +64,27 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    /**
+     * A student account made by an admin (Students > Add student, or a course's "Give access").
+     * Without a password one is made up; it is returned so the admin can pass it on.
+     *
+     * @return array{0: self, 1: string} the student and the password to tell them
+     */
+    public static function createStudent(string $name, string $email, ?string $phone = null, ?string $password = null): array
+    {
+        $password = filled($password) ? $password : \Illuminate\Support\Str::password(10, symbols: false);
+        $student = new self(['name' => $name, 'email' => mb_strtolower(trim($email)), 'phone' => $phone ?: null, 'password' => $password]);
+        $student->role = 'student';
+        $student->save();
+
+        return [$student, $password];
+    }
+
+    public static function findByEmail(string $email): ?self
+    {
+        return self::whereRaw('lower(email) = ?', [mb_strtolower(trim($email))])->first();
+    }
+
     /** A student account an admin turned off: no signing in, no courses. Admin accounts are never disabled. */
     public function isDisabled(): bool
     {
@@ -78,6 +99,11 @@ class User extends Authenticatable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     public function completedLessons(): BelongsToMany

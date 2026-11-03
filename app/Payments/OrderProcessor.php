@@ -16,7 +16,7 @@ use Throwable;
  */
 class OrderProcessor
 {
-    public function __construct(private PayWay $payway)
+    public function __construct(private PayWay $payway, private Khqr $khqr)
     {
     }
 
@@ -28,9 +28,10 @@ class OrderProcessor
         }
 
         try {
-            $result = $this->payway->checkTransaction($order);
+            // KHQR orders are asked of Bakong, the rest of PayWay.
+            $result = $order->gateway === 'khqr' ? $this->khqr->check($order) : $this->payway->checkTransaction($order);
         } catch (Throwable $e) {
-            Log::warning('PayWay check failed for order '.$order->number.': '.$e->getMessage());
+            Log::warning('Payment check failed for order '.$order->number.': '.$e->getMessage());
             $order->forceFill(['checked_at' => now()])->save();
 
             return $order;

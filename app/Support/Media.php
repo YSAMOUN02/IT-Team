@@ -114,6 +114,12 @@ class Media
             return $bytes;
         }
 
+        // Palette PNGs / GIF-like images: some GD builds (e.g. Linux hosting) cannot scale them.
+        if (! imageistruecolor($image)) {
+            imagepalettetotruecolor($image);
+        }
+        imagealphablending($image, false);
+
         // EXIF 2, 4, 5, 7 are mirrored; imagerotate() turns anticlockwise.
         if (in_array($orientation, [2, 4, 5, 7], true)) {
             imageflip($image, IMG_FLIP_HORIZONTAL);
@@ -122,7 +128,12 @@ class Media
             $image = imagerotate($image, $turn, 0);
         }
 
-        $image = imagescale($image, $max, -1, IMG_BICUBIC);
+        // imagescale() returns false on some servers / pictures: try the default way, else keep the original.
+        $image = $image ? (imagescale($image, $max, -1, IMG_BICUBIC) ?: imagescale($image, $max)) : false;
+        if (! $image) {
+            return $bytes;
+        }
+        imagealphablending($image, false);
         ob_start();
         match ($extension) {
             'png' => imagesavealpha($image, true) && imagepng($image, null, 9),

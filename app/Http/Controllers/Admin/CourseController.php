@@ -60,27 +60,50 @@ class CourseController extends Controller
             'rows' => $course->enrollments()->with('user')->latest()->get()
                 ->filter(fn ($e) => $e->user)
                 ->map(fn ($e) => ['enrollment' => $e, 'progress' => CourseProgress::for($e->user, $course)]),
+            // For "Give access": students who cannot open this course right now (never had it, expired
+            // or turned off), newest first; a long list is cut, any other email can still be typed.
+            'pickable' => User::where('role', 'student')->whereNull('disabled_at')
+                ->whereDoesntHave('enrollments', fn ($q) => $q->where('course_id', $course->id)->active())
+                ->latest()->limit(500)->get(['id', 'name', 'email', 'phone'])->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE),
         ]);
     }
 
     public function grantByEmail(Request $request, Course $course)
     {
+        // "email" is picked from the list of existing students or typed; a new email plus a name makes the account.
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'max:190'],
+            'name' => ['nullable', 'string', 'max:120'],
             'days' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'payment_method' => ['nullable', 'in:'.implode(',', array_keys(\App\Models\Invoice::METHODS))],
+            'invoice_note' => ['nullable', 'string', 'max:190'],
         ]);
 
-        $user = User::whereRaw('lower(email) = ?', [mb_strtolower($data['email'])])->first();
-        if (! $user) {
-            return back()->withErrors(['email' => 'No account uses that email. Ask the student to register on the website first.'])->withInput();
+        $user = User::findByEmail($data['email']);
+        if (! $user && blank($data['name'] ?? null)) {
+            return back()->withErrors(['name' => 'No account uses that email yet. Type the student’s name to create one.'])->withInput();
         }
-        if ($user->isAdmin()) {
+        if ($user?->isAdmin()) {
             return back()->withErrors(['email' => 'That email belongs to an admin account. Admins can already open every course.'])->withInput();
         }
 
-        Enrollment::grant($user, $course, $data['days'] ?? $course->plans->first()?->days, 'manual');
+        // Account and course together, or neither: no half-made account whose password nobody saw.
+        [$user, $new] = \Illuminate\Support\Facades\DB::transaction(function () use ($user, $data, $course) {
+            $new = null;
+            if (! $user) {
+                [$user, $password] = User::createStudent($data['name'], $data['email']);
+                $new = ['name' => $user->name, 'email' => $user->email, 'password' => $password];
+            }
+            $days = $data['days'] ?? $course->plans->first()?->days;
+            \App\Models\Invoice::forManualAccess(Enrollment::grant($user, $course, $days, 'manual'), $days, (float) ($data['amount'] ?? 0), $data['payment_method'] ?? null, $data['invoice_note'] ?? null);
 
-        return back()->with('status', "{$user->name} can now open {$course->title}.");
+            return [$user, $new];
+        });
+        $mailed = $request->boolean('send_email') ? \App\Mail\CourseAccess::sendTo($user, $course, $new['password'] ?? null) : null;
+
+        return back()->with('status', ($new ? 'New student account made. ' : '')."{$user->name} can now open {$course->title}.".\App\Mail\CourseAccess::note($mailed))
+            ->with('new_student', $new);
     }
 
     public function destroy(Course $course)

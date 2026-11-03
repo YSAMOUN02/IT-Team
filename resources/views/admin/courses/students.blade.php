@@ -10,6 +10,7 @@
 @section('content')
 <div class="reveal">
     @include('admin.courses._workspace', ['course' => $course, 'tab' => 'students'])
+    @include('admin.students._new-login')
 
     <div class="form-grid">
         <section class="card">
@@ -56,11 +57,21 @@
                 <div class="card-head"><div><h2>Give access</h2><p>E.g. paid in cash at the office.</p></div></div>
                 <form class="card-body fields" method="post" action="{{ route('admin.courses.students.grant', $course) }}">
                     @csrf
-                    @include('admin.fields.input', ['name' => 'email', 'label' => 'Student email', 'type' => 'email', 'value' => '', 'required' => true, 'help' => 'The student must have registered on the website.'])
+                    @include('admin.fields.input', ['name' => 'email', 'label' => 'Student', 'type' => 'email', 'value' => '', 'required' => true,
+                        'placeholder' => 'Pick a student or type an email', 'attrs' => 'list="pickable-students" autocomplete="off"',
+                        'help' => $pickable->count().' existing students to pick from (type a name or email). A new email makes a new account.'])
+                    <datalist id="pickable-students">
+                        @foreach ($pickable as $student)
+                            <option value="{{ $student->email }}">{{ $student->name }}{{ $student->phone ? ' · '.$student->phone : '' }}</option>
+                        @endforeach
+                    </datalist>
+                    @include('admin.fields.input', ['name' => 'name', 'label' => 'Name (new student only)', 'value' => '', 'help' => 'Only needed when the email has no account yet.'])
                     @php
                         $defaultDays = $course->plans->first()?->days;
                     @endphp
                     @include('admin.fields.input', ['name' => 'days', 'label' => 'Days of access', 'type' => 'number', 'value' => '', 'placeholder' => $defaultDays ?: 'lifetime', 'help' => 'Empty = the first plan’s period ('.($defaultDays ? $defaultDays.' days' : 'lifetime').').'])
+                    @include('admin.students._payment-fields')
+                    <label class="check"><input type="checkbox" name="send_email" value="1" checked> Email the student (course link and sign-in)</label>
                     <button class="btn btn-primary btn-block">@include('admin.partials.icon', ['name' => 'check']) Give access</button>
                 </form>
             </section>

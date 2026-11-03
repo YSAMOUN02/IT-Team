@@ -49,6 +49,13 @@ return [
         'bing_site_verification' => ['type' => 'text', 'label' => 'Bing Webmaster verification code (optional)'],
     ]],
 
+    'khqr' => ['label' => 'KHQR payment (Bakong)', 'fields' => [
+        'khqr_account_id' => ['type' => 'text', 'label' => 'Bakong account ID that receives the money, e.g. teamit@aba (in your bank app: Bakong / KHQR profile). Empty = KHQR is not offered.'],
+        'khqr_merchant_name' => ['type' => 'text', 'label' => 'Name shown in the bank app when paying (25 letters max, English)'],
+        'khqr_merchant_city' => ['type' => 'text', 'label' => 'City (15 letters max, e.g. Phnom Penh)'],
+        'khqr_minutes' => ['type' => 'number', 'default' => 15, 'min' => 3, 'max' => 120, 'label' => 'Minutes one QR code stays valid'],
+    ]],
+
     'students' => ['label' => 'Student accounts', 'fields' => [
         'student_device_limit' => ['type' => 'number', 'default' => 2, 'min' => 0, 'max' => 10, 'label' => 'Devices one student can be signed in on at the same time (stops sharing a paid account; signing in on one more device signs out the oldest; 0 = no limit)'],
     ]],

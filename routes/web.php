@@ -56,6 +56,19 @@ Route::get('/search', SearchController::class)->name('search');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SeoController::class, 'robots']);
 
+// Uploaded pictures normally come straight from public/storage, a link to storage/app/public
+// ("php artisan storage:link"). Where that link is missing, or public/storage is a plain folder
+// copied from another PC, new uploads would show as empty boxes: those files are served from here.
+Route::get('/storage/{path}', function (string $path) {
+    $disk = \Illuminate\Support\Facades\Storage::disk('public');
+    // No "..", dotfiles or Windows drive / backslash tricks: only files inside storage/app/public.
+    abort_if(preg_match('#(^|/)\.|[\\\\:\x00]#', $path) || ! $disk->fileExists($path), 404);
+
+    // The sandbox policy stops script inside an uploaded SVG from running when the file is opened directly.
+    return response()->file($disk->path($path), ['Cache-Control' => 'public, max-age=604800', 'X-Content-Type-Options' => 'nosniff',
+        'Content-Security-Policy' => "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox"]);
+})->where('path', '.+')->withoutMiddleware('web')->name('storage.file');
+
 // AdSense asks for /ads.txt; served from the publisher ID in Admin > Google Ads.
 Route::get('/ads.txt', function () {
     $txt = \App\Support\Ads::adsTxt() ?? abort(404);
@@ -100,6 +113,8 @@ Route::middleware(['auth', 'no-store'])->group(function () {
 
     Route::get('/my/courses', [AccountController::class, 'courses'])->name('account.courses');
     Route::get('/my/orders', [AccountController::class, 'orders'])->name('account.orders');
+    Route::get('/my/invoices', [AccountController::class, 'invoices'])->name('account.invoices');
+    Route::get('/my/invoices/{invoice:number}', [AccountController::class, 'invoice'])->name('account.invoices.show');
     Route::get('/my/profile', [AccountController::class, 'profile'])->name('account.profile');
     Route::put('/my/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
 
@@ -109,6 +124,10 @@ Route::middleware(['auth', 'no-store'])->group(function () {
     Route::get('/checkout/{order}/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
     Route::get('/checkout/{order}/test', [CheckoutController::class, 'testGateway'])->name('checkout.test');
     Route::post('/checkout/{order}/test', [CheckoutController::class, 'testGatewayResult'])->name('checkout.test.result');
+    Route::get('/checkout/{order}/khqr', [CheckoutController::class, 'khqr'])->name('checkout.khqr');
+    Route::get('/checkout/{order}/khqr/status', [CheckoutController::class, 'khqrStatus'])->middleware('throttle:40,1')->name('checkout.khqr.status');
+    Route::post('/checkout/{order}/khqr/paid', [CheckoutController::class, 'khqrPaid'])->middleware('throttle:6,1')->name('checkout.khqr.paid');
+    Route::post('/checkout/{order}/khqr/test', [CheckoutController::class, 'khqrSimulate'])->name('checkout.khqr.test');
     Route::get('/orders/{order}', [CheckoutController::class, 'receipt'])->name('orders.show');
 });
 
@@ -190,8 +209,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('orders/{order}', [Admin\OrderController::class, 'show'])->name('orders.show');
         Route::post('orders/{order}/recheck', [Admin\OrderController::class, 'recheck'])->name('orders.recheck');
         Route::post('orders/{order}/refund', [Admin\OrderController::class, 'refund'])->name('orders.refund');
+        Route::post('orders/{order}/confirm', [Admin\OrderController::class, 'confirm'])->name('orders.confirm');
         Route::get('students', [Admin\StudentController::class, 'index'])->name('students.index');
+        Route::get('students/create', [Admin\StudentController::class, 'create'])->name('students.create');
+        Route::post('students', [Admin\StudentController::class, 'store'])->name('students.store');
         Route::get('students/{user}', [Admin\StudentController::class, 'show'])->name('students.show');
+        Route::get('invoices/{invoice:number}', [Admin\StudentController::class, 'invoice'])->name('invoices.show');
         Route::patch('students/{user}', [Admin\StudentController::class, 'update'])->name('students.update');
         Route::post('students/{user}/enrollments', [Admin\StudentController::class, 'grant'])->name('students.grant');
         Route::post('students/{user}/certificates', [Admin\StudentController::class, 'giveCertificate'])->name('students.certificates.store');

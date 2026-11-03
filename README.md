@@ -184,6 +184,21 @@ button. Course pages always show the periods and prices; if online payment is
 not available, checkout says so. Receipt emails need real mail settings
 (`MAIL_*` in `.env`).
 
+## Students and email
+
+- **Admin users** (System) are people who run the admin; **Students** are learners. Students > *Add student* makes an account by hand (password made up when left empty, shown once), optionally with a course.
+- A course's *Students > Give access* picks an existing student from the list or takes a new email + name (makes the account).
+- With *Email the student* ticked, the student gets the course link, the sign-in page and, for a new account, the email + password (`app/Mail/CourseAccess.php`). If mail is not set up the access is still given and the admin is told the email failed.
+- Mail settings live in `.env` (`MAIL_*`, Gmail example in `.env.example`: smtp.gmail.com:587 with a Google *app password*). Run `php artisan config:clear` after changing them.
+
+## KHQR (Bakong, any bank app)
+
+- Fill in **Admin > Settings > KHQR payment** (Bakong account ID like `name@aba`, name, city). Checkout then offers *KHQR (any bank app)*; until then it is hidden.
+- The student gets a KHQR card with the exact amount and the order number, valid for a few minutes (setting), a countdown and *Save QR* (to pay from the same phone). Built in `app/Payments/Khqr.php` (EMVCo/KHQR tags + CRC16); drawn in the browser with qrcode-generator.
+- **With `BAKONG_TOKEN`** in `.env`: the page asks the site every 4 s, the site asks Bakong (`check_transaction_by_md5`), and the course opens by itself. A wrong amount waits as *Needs review*.
+- **Without the token**: the student taps *I have paid*; an admin checks the bank app and presses *Confirm payment received* on the order. Either way: access, invoice and receipt email as for any paid order.
+- On this PC (no PayWay keys) a *Test: act as paid* button appears; never on the live site.
+
 ## Ads, visitors, newsletter
 
 - Admin → *Ads*: six ad spots. Each shows either **your own banner image**

@@ -744,3 +744,9 @@ dialog.confirm::backdrop { background: rgba(15, 20, 48, .45); backdrop-filter: b
 .ad-clicks svg { width: 16px; height: 16px; color: var(--accent-2); }
 .ad-clicks b { color: var(--text); font-weight: 650; }
 @media (max-width: 700px) { .ad-own .cols-2 { grid-template-columns: 1fr; } }
+
+/* Sign-in shown once after an admin creates a student */
+.new-login { border-color: var(--accent-2); margin-bottom: 20px; }
+.new-login-list { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; font-size: 14px; }
+.new-login-list dt { color: var(--text-3); }
+.new-login-list dd { margin: 0; user-select: all; word-break: break-all; }

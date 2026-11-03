@@ -27,6 +27,7 @@
 @endsection
 
 @section('content')
+    @include('admin.students._new-login')
     @if ($student->disabled_at)
         <div class="alert alert-error" role="status">
             @include('admin.partials.icon', ['name' => 'alert'])
@@ -104,6 +105,26 @@
                     </ul>
                 @endif
             </section>
+
+            <section class="card">
+                <div class="card-head"><div><h2>Invoices</h2><p>The student downloads these from My account › Invoices.</p></div></div>
+                @if ($invoices->isEmpty())
+                    <div class="empty-state"><p>No invoices.</p></div>
+                @else
+                    <ul class="feed">
+                        @foreach ($invoices as $invoice)
+                            <li>
+                                <div class="feed-main">
+                                    <a class="feed-title mono" href="{{ route('admin.invoices.show', $invoice) }}" target="_blank">{{ $invoice->number }}</a>
+                                    <span class="feed-meta">{{ $invoice->course_title }} · {{ $invoice->issued_at->format('d M Y') }} · {{ $invoice->methodLabel() }}</span>
+                                </div>
+                                <b>{{ $invoice->formattedAmount() }}</b>
+                                <span class="status {{ $invoice->status === 'paid' ? 'status-on' : 'status-off' }}">{{ ucfirst($invoice->status) }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </section>
         </div>
 
         <div class="form-side">
@@ -120,6 +141,8 @@
                         </select>
                     </div>
                     @include('admin.fields.input', ['name' => 'days', 'label' => 'Days of access', 'type' => 'number', 'value' => '', 'placeholder' => 'lifetime', 'help' => 'Empty = lifetime. Adds to any access that is still running, and turns a turned-off course back on.'])
+                    @include('admin.students._payment-fields')
+                    <label class="check"><input type="checkbox" name="send_email" value="1" checked> Email the student (course link and sign-in)</label>
                     <button class="btn btn-primary btn-block">@include('admin.partials.icon', ['name' => 'check']) Give access</button>
                 </form>
             </section>

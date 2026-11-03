@@ -67,13 +67,19 @@
                         <div class="card checkout-card">
                             <h2>{{ __('account.payment_method') }}</h2>
                             <div class="pay-options">
-                                @foreach ([
+                                @php
+                                    $qrIcon = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>';
+                                    $options = ($khqrAvailable ? ['khqr' => [__('account.pay_bakong'), __('account.pay_bakong_text'), $qrIcon]] : [])
+                                        + ($cardsAvailable ? [
                                     'cards' => [__('account.pay_card'), __('account.pay_card_text'), '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6 15h4"/>'],
                                     'abapay_khqr' => [__('account.pay_khqr'), __('account.pay_khqr_text'), '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>'],
                                     '' => [__('account.pay_any'), __('account.pay_any_text'), '<circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/>'],
-                                ] as $value => [$label, $text, $icon])
+                                        ] : []);
+                                    $defaultOption = array_key_first($options);
+                                @endphp
+                                @foreach ($options as $value => [$label, $text, $icon])
                                     <label class="pay-option">
-                                        <input type="radio" name="payment_option" value="{{ $value }}" @checked(old('payment_option', 'cards') === $value)>
+                                        <input type="radio" name="payment_option" value="{{ $value }}" @checked((string) old('payment_option', $defaultOption) === (string) $value)>
                                         <span class="pay-option-box">
                                             <svg viewBox="0 0 24 24" aria-hidden="true">{!! $icon !!}</svg>
                                             <span><strong>{{ $label }}</strong><small>{{ $text }}</small></span>

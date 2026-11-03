@@ -1,8 +1,12 @@
 @extends('admin.layout')
 
 @section('title', 'Students')
-@section('subtitle', 'Accounts created on the website, with their courses and payments.')
+@section('subtitle', 'Student accounts, with their courses and payments. Admin accounts are under Users.')
 @section('crumbs')<span aria-hidden="true">/</span><span>Sales</span><span aria-hidden="true">/</span><span>Students</span>@endsection
+
+@section('actions')
+    <a class="btn btn-primary" href="{{ route('admin.students.create') }}">@include('admin.partials.icon', ['name' => 'plus']) Add student</a>
+@endsection
 
 @section('content')
     <div class="card reveal">
@@ -22,7 +26,7 @@
             <div class="empty-state">
                 <div class="ico">@include('admin.partials.icon', ['name' => 'users'])</div>
                 <h3>No students {{ request('q') || request('show') ? 'match' : 'yet' }}</h3>
-                <p>Students appear here when they create an account or buy a course.</p>
+                <p>Students appear here when they create an account, buy a course or are added with “Add student”.</p>
             </div>
         @else
             <div class="table-wrap">

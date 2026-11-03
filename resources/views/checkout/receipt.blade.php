@@ -27,7 +27,10 @@
                     @endif
                 </div>
                 <h1>{{ __('account.status_'.$order->status) }}</h1>
-                <p class="lead">{{ __('account.'.$order->status.'_text') }}</p>
+                <p class="lead">{{ $order->gateway === 'khqr' && $order->status === 'review' ? __('account.khqr_review_text') : __('account.'.$order->status.'_text') }}</p>
+                @if ($order->gateway === 'khqr' && $order->isPending())
+                    <p><a class="btn btn-primary" href="{{ route('checkout.khqr', $order) }}">{{ __('account.khqr_title') }}</a></p>
+                @endif
 
                 <dl class="summary-lines">
                     <dt>{{ __('account.order_number') }}</dt><dd class="mono">{{ $order->number }}</dd>

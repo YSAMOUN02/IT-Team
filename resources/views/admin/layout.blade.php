@@ -27,7 +27,7 @@
             ['Partners', route('admin.partners.index'), request()->routeIs('admin.partners.*'), 'partners', ['count', $navCounts['partners']]],
         ]],
         ['E', 'System', [
-            ['Users', route('admin.users.index'), request()->routeIs('admin.users.*'), 'users', null],
+            ['Admin users', route('admin.users.index'), request()->routeIs('admin.users.*'), 'user', null],
             ['Ads', route('admin.ads.edit'), request()->routeIs('admin.ads.*'), 'ads', null],
             ['Settings', route('admin.settings.edit'), request()->routeIs('admin.settings.*'), 'settings', null],
         ]],

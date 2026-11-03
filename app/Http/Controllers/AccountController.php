@@ -51,6 +51,19 @@ class AccountController extends Controller
         return view('account.orders', ['orders' => $request->user()->orders()->latest()->get()]);
     }
 
+    public function invoices(Request $request)
+    {
+        return view('account.invoices', ['invoices' => $request->user()->invoices()->latest('issued_at')->latest('id')->get()]);
+    }
+
+    /** One invoice, ready to print or save as PDF. Students only see their own. */
+    public function invoice(Request $request, \App\Models\Invoice $invoice)
+    {
+        abort_unless($invoice->user_id === $request->user()->id, 404);
+
+        return view('invoices.show', ['invoice' => $invoice, 'back' => route('account.invoices')]);
+    }
+
     public function profile(Request $request)
     {
         return view('account.profile', ['user' => $request->user()]);

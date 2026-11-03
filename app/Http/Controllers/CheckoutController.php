@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AsksGuestsToSignIn;
 use App\Models\Course;
 use App\Models\Order;
+use App\Payments\Khqr;
 use App\Payments\OrderProcessor;
 use App\Payments\PayWay;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class CheckoutController extends Controller
 {
     use AsksGuestsToSignIn;
 
-    public function __construct(private PayWay $payway, private OrderProcessor $processor)
+    public function __construct(private PayWay $payway, private OrderProcessor $processor, private Khqr $khqr)
     {
     }
 
@@ -48,7 +49,9 @@ class CheckoutController extends Controller
             'selected' => $selected,
             'user' => $request->user(),
             'enrollment' => $request->user()->enrollments()->where('course_id', $course->id)->first(),
-            'available' => $this->payway->available(),
+            'available' => $this->payway->available() || $this->khqr->available(),
+            'cardsAvailable' => $this->payway->available(),
+            'khqrAvailable' => $this->khqr->available(),
             'testGateway' => $this->payway->usesTestGateway(),
         ]);
     }
@@ -65,14 +68,15 @@ class CheckoutController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190'],
             'phone' => ['nullable', 'string', 'max:40'],
-            'payment_option' => ['nullable', Rule::in(PayWay::PAYMENT_OPTIONS)],
+            'payment_option' => ['nullable', Rule::in([...PayWay::PAYMENT_OPTIONS, 'khqr'])],
             'terms' => ['accepted'],
         ]);
 
         // The price always comes from the plan on the server, never from the form.
         $plan = $course->plans->firstWhere('id', (int) $data['plan_id']);
         $amount = $plan->currentPrice();
-        abort_unless($amount <= 0 || $this->payway->available(), 404);
+        $khqr = ($data['payment_option'] ?? null) === 'khqr';
+        abort_unless($amount <= 0 || ($khqr ? $this->khqr->available() : $this->payway->available()), 404);
 
         $order = Order::create([
             'number' => Order::newNumber(),
@@ -87,7 +91,7 @@ class CheckoutController extends Controller
             'currency' => $course->currency ?: config('payway.currency'),
             'access_days' => $plan->days,
             'payment_option' => $data['payment_option'] ?? null,
-            'gateway' => $amount <= 0 ? 'free' : ($this->payway->usesTestGateway() ? 'test' : 'payway'),
+            'gateway' => $amount <= 0 ? 'free' : ($khqr ? 'khqr' : ($this->payway->usesTestGateway() ? 'test' : 'payway')),
             'status' => 'pending',
             'buyer_name' => $data['name'],
             'buyer_email' => $data['email'],
@@ -101,6 +105,9 @@ class CheckoutController extends Controller
             return redirect()->route('orders.show', $order);
         }
 
+        if ($khqr) {
+            return redirect()->route('checkout.khqr', $order);
+        }
         if ($this->payway->usesTestGateway()) {
             return redirect()->route('checkout.test', $order);
         }
@@ -183,6 +190,68 @@ class CheckoutController extends Controller
         return $result === 'CANCELLED'
             ? redirect()->route('checkout.cancel', $order)
             : redirect()->route('checkout.return', $order);
+    }
+
+
+    /** KHQR: the QR code with the exact amount, for any Cambodian bank app. */
+    public function khqr(Request $request, Order $order)
+    {
+        $this->authorizeOrder($request, $order);
+        abort_unless($order->gateway === 'khqr', 404);
+        if (! in_array($order->status, ['pending', 'review'], true)) {
+            return redirect()->route('orders.show', $order);
+        }
+
+        return view('checkout.khqr', [
+            'order' => $order,
+            'khqr' => $this->khqr->forOrder($order),
+            'autoCheck' => $this->khqr->autoCheck(),
+            'simulate' => $this->payway->usesTestGateway(),
+        ]);
+    }
+
+    /** Polled by the KHQR page: has the money arrived? */
+    public function khqrStatus(Request $request, Order $order)
+    {
+        $this->authorizeOrder($request, $order);
+        abort_unless($order->gateway === 'khqr', 404);
+        if ($order->isPending() || $order->status === 'review') {
+            // Bakong is asked at most every 4 seconds per order.
+            if (! $order->checked_at || $order->checked_at->lt(now()->subSeconds(4))) {
+                $order = $this->processor->refresh($order);
+            }
+        }
+        $expired = $order->isPending() && now()->gte(data_get($order->gateway_payload, 'khqr.expires_at', now()));
+
+        return response()->json([
+            'status' => $order->status,
+            'paid' => $order->isPaid(),
+            'expired' => $expired,
+            'redirect' => $order->isPaid() || ! in_array($order->status, ['pending', 'review'], true) ? route('orders.show', $order) : null,
+        ]);
+    }
+
+    /** "I have paid" (no Bakong token): the order waits for an admin to confirm it. */
+    public function khqrPaid(Request $request, Order $order)
+    {
+        $this->authorizeOrder($request, $order);
+        abort_unless($order->gateway === 'khqr', 404);
+        if ($order->isPending()) {
+            $order->update(['status' => 'review', 'gateway_status' => 'BUYER_SAYS_PAID']);
+        }
+
+        return redirect()->route('orders.show', $order);
+    }
+
+    /** On this computer only (no real bank): act as if the QR was paid. */
+    public function khqrSimulate(Request $request, Order $order)
+    {
+        $this->authorizeOrder($request, $order);
+        abort_unless($order->gateway === 'khqr' && $this->payway->usesTestGateway(), 404);
+        $this->processor->apply($order, ['status' => 'paid', 'gateway_status' => 'KHQR_TEST', 'amount' => (float) $order->amount,
+            'currency' => $order->currency, 'apv' => 'TEST-KHQR', 'payload' => ['simulated' => true]]);
+
+        return redirect()->route('orders.show', $order);
     }
 
     private function authorizeOrder(Request $request, Order $order): void

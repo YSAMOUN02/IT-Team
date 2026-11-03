@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Off: lesson files are served by LearnController (enrolled students only), and the
+            // built-in route would take /storage/{path}, which routes/web.php uses for public pictures.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

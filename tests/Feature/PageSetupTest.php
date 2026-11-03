@@ -190,6 +190,23 @@ class PageSetupTest extends TestCase
             ->assertSee('up to 20 MB');
     }
 
+    public function test_a_new_photo_shows_even_where_public_storage_is_not_linked(): void
+    {
+        // A PC whose public/storage is a folder copied from another PC never sees new uploads in it.
+        $page = $this->home();
+        $this->save($page, ['uploads' => ['founder' => ['image' => UploadedFile::fake()->image('img1.png', 400, 500)]]])->assertSessionHasNoErrors();
+        $path = $page->fresh()->field('founder.image');
+
+        $response = $this->get('/storage/'.$path)->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->assertSame(Storage::disk('public')->get($path), file_get_contents($response->baseResponse->getFile()->getPathname()));
+        $this->assertFalse($response->headers->has('Set-Cookie'));
+
+        Storage::disk('public')->put('.hidden', 'x');
+        foreach (['/storage/pages/missing.png', '/storage/.hidden', '/storage/pages/../../../.env', '/storage/pages/..%2F..%2F.env', '/storage/C:%5CWindows%5Cwin.ini'] as $url) {
+            $this->get($url)->assertNotFound();
+        }
+    }
+
     public function test_a_jpg_saved_from_the_web_as_jfif_is_taken_and_stored_as_jpg(): void
     {
         $page = $this->home();
