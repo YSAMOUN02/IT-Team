@@ -40,6 +40,7 @@
                             <div>
                                 <a href="{{ route('admin.students.show', $retake->user) }}">{{ $retake->user->name }}</a>
                                 <span class="row-sub">{{ $retake->user->email }}</span>
+                                @include('admin.classes._chips', ['chipClasses' => $studentClasses[$retake->user_id] ?? collect()])
                             </div>
                         </div>
                         <p class="retake-test">

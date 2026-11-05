@@ -25,7 +25,7 @@
                             @if ($image)
                                 <img class="feed-thumb" src="{{ $image }}" alt="">
                             @else
-                                <span class="feed-thumb">@include('admin.partials.icon', ['name' => 'pages'])</span>
+                                <span class="feed-thumb">@include('admin.partials.icon', ['name' => ['Students' => 'user', 'Classes' => 'grid', 'Messages' => 'inbox'][$label] ?? 'pages'])</span>
                             @endif
                             <div class="feed-main">
                                 <a class="feed-title" href="{{ $url }}">{{ $title }}</a>

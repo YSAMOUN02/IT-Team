@@ -139,7 +139,7 @@ class QuizController extends Controller
     public function check(Request $request, Course $course, Quiz $quiz, QuizQuestion $question)
     {
         $this->authorizeQuiz($request, $course, $quiz);
-        abort_unless($quiz->isPractice() && $question->quiz_id === $quiz->id, 404);
+        abort_unless($quiz->isPractice() && (int) $question->quiz_id === (int) $quiz->id, 404);
 
         $chosen = array_map('intval', (array) $request->input('chosen', []));
 
@@ -161,6 +161,6 @@ class QuizController extends Controller
     private function authorizeAttempt(Request $request, Course $course, Quiz $quiz, QuizAttempt $attempt): void
     {
         $this->authorizeQuiz($request, $course, $quiz);
-        abort_unless($attempt->user_id === $request->user()->id, 404);
+        abort_unless((int) $attempt->user_id === (int) $request->user()->id, 404);
     }
 }

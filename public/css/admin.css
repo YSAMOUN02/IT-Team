@@ -95,7 +95,6 @@ code, .mono { font-family: var(--mono); font-size: .92em; }
     padding: 12px 32px; min-height: 64px; background: rgba(245, 246, 250, .85); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--line);
 }
-.menu-btn { display: none; }
 .global-search { position: relative; flex: 1; max-width: 420px; }
 .global-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); width: 16px; height: 16px; }
 .global-search input {
@@ -111,6 +110,7 @@ kbd { font: 500 11px/1 var(--mono); padding: 4px 6px; border-radius: 5px; border
     background: var(--surface); color: var(--text-2); cursor: pointer; transition: .15s;
 }
 .icon-btn:hover { color: var(--accent-2); border-color: #cfd0f5; }
+.menu-btn { display: none; } /* after .icon-btn, which sets display; phones show it (see the 900px rules) */
 
 .user-menu { position: relative; }
 .user-menu summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 4px 10px 4px 4px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; }
@@ -494,6 +494,7 @@ dialog.confirm::backdrop { background: rgba(15, 20, 48, .45); backdrop-filter: b
 .qtype { font-weight: 600; padding: 1px 7px; border-radius: 5px; font-size: 11.5px; }
 .qtype-practice { background: #e5f5ec; color: #0b7a45; }
 .qtype-quiz { background: #eef1ff; color: #3c3dc9; }
+.qtype-midterm { background: #f3e8fd; color: #7e30a8; }
 .qtype-mock { background: #fff4dc; color: #9a6200; }
 .qtype-final { background: #fde8ec; color: #b4233e; }
 .add-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
@@ -911,3 +912,92 @@ dialog.confirm::backdrop { background: rgba(15, 20, 48, .45); backdrop-filter: b
     .track-table .row-title { min-width: 0; }
     .track-thumb-wide { display: none; }
 }
+
+/* Classes: adding students (tick several), the class table, students who need help. */
+.add-students { margin-bottom: 20px; }
+.add-students > summary { cursor: pointer; list-style: none; }
+.add-students > summary::-webkit-details-marker { display: none; }
+.add-students > summary h2 { display: flex; align-items: center; gap: 8px; }
+.add-students:not([open]) > summary { border-bottom: 0; }
+.add-students > summary::after { content: "Open"; font-size: 12.5px; font-weight: 600; color: var(--accent-2); }
+.add-students[open] > summary::after { content: "Close"; }
+.pick-many { max-height: 320px; }
+.pick-many li { list-style: none; }
+.pick-many li[hidden] { display: none; }
+.pick-many .picker-item { cursor: pointer; }
+.pick-many input[type=checkbox] { width: 17px; height: 17px; flex: none; accent-color: var(--accent-2); }
+.pick-many .picker-item:has(input:checked) { background: var(--accent-soft); }
+.picker-tag-ok { background: var(--good-bg); color: var(--good); }
+.add-actions { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; margin-top: 14px; }
+.add-actions .help { flex: 1; min-width: 220px; margin: 0; }
+.kpi-alert { border-color: #f5c8c2; background: #fff8f7; }
+.kpi-alert .kpi-value { color: var(--danger); }
+a.kpi { color: inherit; display: block; }
+a.kpi:hover { border-color: #cfd0f5; }
+.segmented a.seg-alert { color: var(--danger); }
+.class-book tr.needs-help td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+.help-reason { display: block; margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--danger); max-width: 260px; }
+.danger-zone { margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--line); }
+.class-tabs { display: flex; flex-wrap: wrap; width: max-content; max-width: 100%; margin-bottom: 18px; }
+.class-tabs a { padding: 8px 16px; font-size: 13.5px; }
+.course-ticks { gap: 8px; }
+.toolbar-links { font-size: 12.5px; color: var(--text-3); }
+.toolbar-links a { font-weight: 600; }
+.give-link { display: inline-block; margin-top: 4px; font-size: 12.5px; font-weight: 600; }
+.overview-cell { min-width: 140px; }
+.overview-cell .status { margin-top: 2px; }
+.overview-lines { display: none; }
+.overview-lines .give-link { margin: 0 0 0 4px; color: var(--accent); }
+@media (max-width: 640px) {
+    .overview-lines.show-sm { display: grid; gap: 3px; margin-top: 4px; }
+    .class-tabs { width: 100%; }
+    .class-tabs a { flex: 1 1 auto; text-align: center; }
+}
+.class-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.class-chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.class-chip svg { width: 11px; height: 11px; }
+.class-chip:hover { background: #e4e2ff; }
+#give-access { scroll-margin-top: 96px; }
+.add-to-class { display: flex; gap: 8px; align-items: center; }
+.add-to-class .control { flex: 1; min-width: 0; min-height: 38px; padding: 7px 10px; }
+@media (max-width: 640px) {
+    /* Filter tabs: whole labels, on a second row if needed, instead of words broken in two. */
+    .toolbar .segmented { flex-wrap: wrap; }
+    .toolbar .segmented a { white-space: nowrap; }
+}
+
+/* Chat: a student's conversation, answered by chat or by email. */
+.chat-card { overflow: hidden; }
+.chat-thread { display: flex; flex-direction: column; gap: 12px; height: max(220px, calc(100vh - 470px)); max-height: 620px; padding: 18px 20px; overflow-y: auto; overscroll-behavior: contain; background: var(--bg); border-bottom: 1px solid var(--line-2); }
+.chat-empty { margin: auto; max-width: 380px; text-align: center; color: var(--text-3); }
+.chat-msg { align-self: flex-start; max-width: min(84%, 620px); }
+.chat-msg-mine { align-self: flex-end; text-align: right; }
+.chat-bubble { display: inline-block; padding: 10px 14px; border: 1px solid var(--line); border-radius: 14px 14px 14px 4px; background: var(--surface); text-align: left; font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere; }
+.chat-msg-mine .chat-bubble { border-color: var(--accent); border-radius: 14px 14px 4px 14px; background: var(--accent); color: #fff; }
+.chat-msg-mine:not(.chat-msg-email) .chat-text a { color: #fff !important; text-decoration: underline; }
+.chat-msg-email .chat-bubble { border-color: #d9d7ff; border-radius: 14px; background: #fbfbff; color: var(--text); box-shadow: inset 3px 0 0 var(--accent-2); }
+.chat-email-head { margin: 0 0 2px; font-size: 11.5px; font-weight: 600; color: var(--accent-2); }
+.chat-subject { margin: 0 0 6px; font-weight: 700; }
+.chat-signature { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12.5px; line-height: 1.6; color: var(--text-3); white-space: pre-wrap; }
+.chat-meta { margin: 3px 6px 0; font-size: 12px; color: var(--text-3); }
+.chat-tabs { padding: 12px 16px 0; }
+.chat-compose { display: flex; align-items: flex-end; gap: 10px; padding: 12px 16px; }
+.chat-compose textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 160px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); font: 14.5px/1.5 var(--font); color: var(--text); resize: none; }
+.chat-compose textarea:focus { outline: 2px solid var(--accent-2); outline-offset: -1px; }
+.chat-compose .btn { flex: none; min-height: 44px; }
+.chat-error { margin: 0; padding: 0 16px 8px; font-size: 13px; color: var(--danger); }
+.chat-hint { margin: 0; padding: 0 16px 14px; font-size: 12.5px; color: var(--text-3); }
+.chat-count { display: inline-block; min-width: 20px; margin-left: 6px; padding: 2px 6px; border-radius: 999px; background: #ff5d73; color: #fff; font: 600 11px/1 var(--mono); text-align: center; vertical-align: 1px; }
+.chat-side-line { display: block; }
+.btn-icon.has-unread { position: relative; }
+.btn-icon.has-unread::after { content: ""; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ff5d73; border: 2px solid var(--surface); }
+.data .row-sub.class-contact { display: block; margin-top: 3px; }
+.data .row-sub.class-contact a { font-weight: 600; color: var(--accent-2); }
+@media (hover: none) { .chat-hint { display: none; } }
+@media (max-width: 640px) {
+    .chat-thread { padding: 14px 12px; }
+    .chat-tabs { padding: 10px 12px 0; }
+    .chat-compose { padding: 10px 12px; }
+}
+.chat-inbox .unread .row-title a::after { content: none; } /* the count says it */
+@media (min-width: 641px) { .data .row-sub.class-contact.show-sm { display: none; } }

@@ -25,16 +25,21 @@ class StudentController extends Controller
                 ->when($request->query('show') === 'current', fn ($q) => $q->whereNull('disabled_at')->whereHas('enrollments', fn ($e) => $e->active()))
                 ->when($request->query('show') === 'off', fn ($q) => $q->where(fn ($q) => $q
                     ->whereNotNull('disabled_at')->orWhereHas('enrollments', fn ($e) => $e->whereNotNull('disabled_at'))))
-                ->with(['enrollments' => fn ($q) => $q->with('course:id,title')->latest()])
+                ->when($request->integer('class'), fn ($q, $id) => $q->whereHas('classrooms', fn ($c) => $c->whereKey($id)))
+                ->with(['enrollments' => fn ($q) => $q->with('course:id,title')->latest(), 'classrooms:id,name'])
                 ->withCount(['orders' => fn ($q) => $q->where('status', 'paid')])
                 ->latest()->paginate(25)->withQueryString(),
+            'classes' => \App\Models\Classroom::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     /** Add a student by hand (e.g. signed up at the office). Admin accounts stay under Admin > Users. */
     public function create()
     {
-        return view('admin.students.create', ['courses' => Course::with('plans')->orderBy('title')->get()]);
+        return view('admin.students.create', [
+            'courses' => Course::with('plans')->orderBy('title')->get(),
+            'classes' => \App\Models\Classroom::with('courses:id,title')->orderBy('name')->get(),
+        ]);
     }
 
     public function store(Request $request)
@@ -50,6 +55,7 @@ class StudentController extends Controller
             'amount' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'payment_method' => ['nullable', 'in:'.implode(',', array_keys(\App\Models\Invoice::METHODS))],
             'invoice_note' => ['nullable', 'string', 'max:190'],
+            'classroom_id' => ['nullable', 'integer', 'exists:classrooms,id'],
         ], ['email.unique' => 'A student or admin already uses this email.']);
 
         $course = Course::find($data['course_id'] ?? null);
@@ -64,10 +70,12 @@ class StudentController extends Controller
 
             return [$student, $password];
         });
+        $classroom = isset($data['classroom_id']) ? \App\Models\Classroom::find($data['classroom_id']) : null;
+        $classroom?->students()->syncWithoutDetaching([$student->id]);
         $mailed = $request->boolean('send_email') ? CourseAccess::sendTo($student, $course, $password) : null;
 
         return redirect()->route('admin.students.show', $student)
-            ->with('status', "Student {$student->name} added.".CourseAccess::note($mailed))
+            ->with('status', "Student {$student->name} added.".($classroom ? " In class “{$classroom->name}”." : '').CourseAccess::note($mailed))
             ->with('new_student', ['name' => $student->name, 'email' => $student->email, 'password' => $password]);
     }
 
@@ -89,6 +97,9 @@ class StudentController extends Controller
             'attempts' => QuizAttempt::where('user_id', $user->id)->with('quiz.course:id,title')->latest('started_at')->latest('id')->take(10)->get(),
             'attemptCount' => QuizAttempt::where('user_id', $user->id)->count(),
             'invoices' => $user->invoices()->latest('issued_at')->latest('id')->get(),
+            'classes' => $user->classrooms()->with('courses:id,title')->latest('classrooms.id')->get(),
+            'otherClasses' => \App\Models\Classroom::whereDoesntHave('students', fn ($q) => $q->whereKey($user->id))
+                ->with('courses:id,title')->orderByRaw('ends_on is not null and ends_on < ?', [today()->toDateString()])->orderBy('name')->get(),
             'courses' => Course::with('plans')->orderBy('title')->get(),
         ]);
     }

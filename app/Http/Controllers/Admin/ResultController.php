@@ -27,7 +27,7 @@ class ResultController extends Controller
 
     public function index(Request $request)
     {
-        $filters = $request->only('q', 'course', 'type', 'result', 'quiz');
+        $filters = $request->only('q', 'course', 'type', 'result', 'quiz', 'class');
         $attempts = $this->filtered($filters)
             ->with(['user:id,name,email', 'quiz:id,course_id,title,type,pass_percent,time_limit', 'quiz.course:id,title'])
             ->latest('started_at')->latest('id')
@@ -59,6 +59,8 @@ class ResultController extends Controller
                 'unfinished' => $this->filtered($filters)->whereNull('submitted_at')->count(),
             ],
             'courses' => Course::orderBy('title')->get(['id', 'title']),
+            'classes' => \App\Models\Classroom::orderBy('name')->get(['id', 'name']),
+            'studentClasses' => \App\Models\Classroom::forStudents($attempts->pluck('user_id')),
             'quiz' => isset($filters['quiz']) ? Quiz::with('course:id,title')->find($filters['quiz']) : null,
         ]);
     }
@@ -86,13 +88,18 @@ class ResultController extends Controller
     /** Admin > Courses > a course > Results: the whole class on one page, one column per test. */
     public function course(Request $request, Course $course)
     {
-        $book = $this->gradebook($course);
+        // "Class": only the students of one of the course's classes.
+        $classes = $course->classrooms()->orderBy('name')->get(['classrooms.id', 'name']);
+        $class = $classes->firstWhere('id', $request->integer('class'));
+        $book = self::gradebook($course, $class ? \App\Models\Classroom::studentIds($class->id) : null);
         $show = array_key_exists((string) $request->query('show'), self::COURSE_STATUSES) ? $request->query('show') : null;
         $final = $book['tests']->firstWhere('type', 'final');
         $finalTakers = $final ? $book['rows']->filter(fn ($row) => $row['scores'][$final->id]) : collect();
 
         return view('admin.courses.results', $book + [
             'course' => $course,
+            'classes' => $classes,
+            'class' => $class,
             'show' => $show,
             'shown' => $show ? $book['rows']->where('status', $show)->values() : $book['rows'],
             'counts' => $book['rows']->countBy('status'),
@@ -105,7 +112,8 @@ class ResultController extends Controller
     /** The same table as a CSV file for Excel (with a BOM, so Khmer names show correctly). */
     public function courseExport(Request $request, Course $course)
     {
-        ['tests' => $tests, 'rows' => $rows] = $this->gradebook($course);
+        $class = $course->classrooms()->find($request->integer('class'));
+        ['tests' => $tests, 'rows' => $rows] = self::gradebook($course, $class ? \App\Models\Classroom::studentIds($class->id) : null);
         if (array_key_exists((string) $request->query('show'), self::COURSE_STATUSES)) {
             $rows = $rows->where('status', $request->query('show'));
         }
@@ -131,24 +139,26 @@ class ResultController extends Controller
     /**
      * Every student of the course with their progress and, for each test (practice left out),
      * their best submitted score, whether any try passed, and how many tries.
+     * $userIds narrows it to some students (a class, Admin > Classes).
      */
-    private function gradebook(Course $course): array
+    public static function gradebook(Course $course, ?array $userIds = null): array
     {
-        // Column names as the curriculum shows them: "Module 2" for that module's quiz, "Mock", "Final".
+        // Column names as the curriculum shows them: "Module 2" for that module's quiz, "Mid-term", "Mock", "Final".
         $tests = collect();
         $labels = [];
         foreach ($course->curriculum() as $i => $section) {
             foreach ($section['items']->filter(fn ($item) => $item instanceof Quiz && ! $item->isPractice()) as $test) {
                 $name = match (true) {
                     $test->type === 'quiz' && $section['module'] !== null => 'Module '.($i + 1),
-                    default => ['quiz' => 'Quiz', 'mock' => 'Mock', 'final' => 'Final'][$test->type] ?? ucfirst($test->type),
+                    default => ['quiz' => 'Quiz', 'midterm' => 'Mid-term', 'mock' => 'Mock', 'final' => 'Final'][$test->type] ?? ucfirst($test->type),
                 };
                 $taken = count(array_filter($labels, fn ($label) => $label === $name || str_starts_with($label, "$name (")));
                 $labels[$test->id] = $taken ? "$name (".($taken + 1).')' : $name;
                 $tests->push($test);
             }
         }
-        $enrollments = $course->enrollments()->with('user')->whereHas('user', fn ($q) => $q->where('role', 'student'))->get();
+        $enrollments = $course->enrollments()->with('user')->whereHas('user', fn ($q) => $q->where('role', 'student'))
+            ->when($userIds !== null, fn ($q) => $q->whereIn('user_id', $userIds))->get();
         $attempts = QuizAttempt::whereIn('quiz_id', $tests->pluck('id'))->whereIn('user_id', $enrollments->pluck('user_id'))
             ->whereNotNull('submitted_at')->orderByDesc('percent')->orderBy('id')
             ->get(['id', 'user_id', 'quiz_id', 'percent', 'passed'])
@@ -194,6 +204,7 @@ class ResultController extends Controller
                 ->when($filters['course'] ?? null, fn ($q, $id) => $q->where('course_id', $id))
                 ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type)))
             ->when($filters['quiz'] ?? null, fn ($q, $id) => $q->where('quiz_id', $id))
+            ->when($filters['class'] ?? null, fn ($q, $id) => $q->whereIn('user_id', \App\Models\Classroom::studentIds((int) $id)))
             ->when(($filters['result'] ?? null) === 'passed', fn ($q) => $q->whereNotNull('submitted_at')->where('passed', true))
             ->when(($filters['result'] ?? null) === 'failed', fn ($q) => $q->whereNotNull('submitted_at')->where('passed', false))
             ->when(($filters['result'] ?? null) === 'unfinished', fn ($q) => $q->whereNull('submitted_at'));

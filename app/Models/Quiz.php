@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * A test inside a course. Types follow the Cisco NetAcad pattern:
  *  practice - check each answer straight away, unlimited tries, not graded
  *  quiz     - module quiz, must be passed to complete the course
+ *  midterm  - timed exam halfway through the course, must be passed to complete it
  *  mock     - timed practice exam to prepare for the final, unlimited tries
  *  final    - timed final exam, must be passed for the certificate
  */
@@ -19,12 +20,13 @@ class Quiz extends Model
     public const TYPES = [
         'practice' => 'Practice',
         'quiz' => 'Module quiz',
+        'midterm' => 'Mid-term exam',
         'mock' => 'Mock exam',
         'final' => 'Final exam',
     ];
 
     /** Types that must be passed before the course counts as completed. */
-    public const REQUIRED_TYPES = ['quiz', 'final'];
+    public const REQUIRED_TYPES = ['quiz', 'midterm', 'final'];
 
     protected $guarded = ['id'];
 

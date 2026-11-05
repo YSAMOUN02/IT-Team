@@ -307,6 +307,34 @@
         setMode(mode.value);
     });
 
+    // Classes › Add students: search filters the list, "Tick all shown", the button counts the ticks.
+    $$('[data-add-students]').forEach((box) => {
+        const search = $('[data-pick-search]', box);
+        if (!search) return;
+        const rows = $$('[data-pick-row]', box);
+        const button = $('[data-pick-submit]', box);
+        const label = $('[data-pick-label]', box);
+        const count = () => {
+            const n = rows.filter((row) => $('input', row).checked).length;
+            button.disabled = n === 0;
+            label.textContent = n ? 'Add ' + n + ' student' + (n === 1 ? '' : 's') : 'Add students';
+        };
+        search.addEventListener('input', () => {
+            const q = search.value.trim().toLowerCase();
+            rows.forEach((row) => { row.hidden = q !== '' && !row.dataset.search.includes(q); });
+            $('[data-pick-empty]', box).hidden = rows.some((row) => !row.hidden);
+        });
+        search.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+        $('[data-pick-all]', box).addEventListener('click', () => {
+            const shown = rows.filter((row) => !row.hidden);
+            const tick = shown.some((row) => !$('input', row).checked);
+            shown.forEach((row) => { $('input', row).checked = tick; });
+            count();
+        });
+        box.addEventListener('change', count);
+        count();
+    });
+
     // Messages › Reply: "Reply" jumps to the box, the signature's Edit opens it (preview follows
     // the typing), Ctrl/Cmd + Enter sends.
     $$('[data-reply-form]').forEach((form) => {

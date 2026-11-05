@@ -60,9 +60,9 @@ fills the database:
 
 - **Course builder**: Admin → Courses → *Curriculum*. A course has modules; a
   module holds lessons (video link or MP4, notes, practice workbook + solution)
-  and tests: *Practice* (instant feedback), *Module quiz*, *Mock exam* (timed)
+  and tests: *Practice* (instant feedback), *Module quiz*, *Mid-term exam* (timed, limited attempts), *Mock exam* (timed)
   and *Final exam* (timed, limited attempts). Lessons/tests can be free previews.
-- **Completion**: every lesson done + every module quiz and final exam passed →
+- **Completion**: every lesson done + every module quiz, mid-term and final exam passed →
   a printable certificate with a public verification link (`/certificates/{code}`).
   Admin → Students → *Give certificate* issues one by hand (e.g. a class at the
   office, any date up to today); a student without the course gets the certificate
@@ -205,6 +205,22 @@ not available, checkout says so. Receipt emails need real mail settings
 - There is **one signature** for all replies: *Edit* on the reply box, or **Settings > Email replies**. A change is kept for later replies; replies already sent keep theirs. Empty = site name, phone, email and website.
 - Sent replies are kept under the message (`inquiry_replies`) and the list shows *Replied*. If the email cannot go, nothing is kept and the text stays in the box.
 
+## Classes (for teachers)
+
+- **Admin > Classes**: a class is a group of students who study together, in one course or several (name, courses, teacher, schedule, first and last day, notes). Being in a class does not give access; access is given on the course's Students page as usual.
+- The class page shows every student's progress, result, last activity and best score per test, with **Needs help** first: did not pass a module quiz or the final, finished nothing for 7 days (new students get 7 days first), cannot open a course, or their account is turned off. Filters: Needs help, Learning, Completed, Not started, No access. *Download Excel* gives the same table as CSV.
+- A class with several courses opens on **Overview** (one column per course, *Give access →* where a student cannot open one) and has a tab per course with its tests.
+- *Add students* ticks several at once (those who have the class's courses are listed first). Taking a student out of a class, or deleting a class, never changes their course access or progress.
+- Linked from the rest of the admin: a course's **Classes** tab; a class filter and class chips on the course's Students and Results pages, Students, Exam results and Re-exam requests; *Give access* and *Add student* can put the student in a class; a student's page lists their classes, with *Add to class*; the admin search finds classes (by name or teacher) and students.
+- Tables: `classrooms`, `classroom_course` (`position` = the order of the course tabs) and `classroom_student`.
+
+## Chat and email with students
+
+- **My account > Chat** (in the account menu, with a red count): a student's conversation with the school. The page sends without reloading and asks for new messages every 4 to 15 seconds while it is open and in view.
+- **Admin > Chat** (red badge in the sidebar = students waiting): open a conversation and answer by *Chat* (they see it on the website) or *Email* (subject and the shared signature, sent from the site's address). Both stay in one history, which the student sees too. If an email cannot go, nothing is kept, the text stays on the form and the error says why (sign-in refused, or mail server not reachable).
+- A student's page and each row of a class page have *Chat* and *Email* buttons; a red dot means an unread message from them.
+- Students always see the school's name; admins see which admin wrote. Table: `chat_messages`. There is no alert outside the site for a new chat message: people see the red counts when they next open a page.
+
 ## Tracking: posts, courses and ads by date
 
 - **Admin > Tracking**: pick From and To (or Today, Last 7 days, This month…), then the tab. Each number is compared with the same number of days just before. Click a row to see that one post, course or ad spot on its own.
@@ -231,6 +247,8 @@ not available, checkout says so. Receipt emails need real mail settings
 ## Tests
 
 `php artisan test` covers PayWay signing/verification, access rules and quiz grading.
+
+`TEXT_NUMBERS=1 php artisan test` runs everything with the database returning numbers as text, as it does on hosts whose MySQL driver is not mysqlnd. There `"12" === 12` is false, and pages that compare ids answer 404 on that server only. `App\Support\NativeNumbersStatement` turns such numbers back on those hosts, so this mode must pass too.
 
 ## Where things are
 

@@ -12,6 +12,7 @@
         ['Lesson', route('admin.courses.lessons.create', [$course, 'module' => $moduleId])],
         ['Practice', route('admin.courses.quizzes.create', array_filter([$course, 'type' => 'practice', 'module' => $moduleId]))],
         ['Quiz', route('admin.courses.quizzes.create', array_filter([$course, 'type' => 'quiz', 'module' => $moduleId]))],
+        ['Mid-term exam', route('admin.courses.quizzes.create', array_filter([$course, 'type' => 'midterm', 'module' => $moduleId]))],
         ['Mock exam', route('admin.courses.quizzes.create', array_filter([$course, 'type' => 'mock', 'module' => $moduleId]))],
         ['Final exam', route('admin.courses.quizzes.create', array_filter([$course, 'type' => 'final', 'module' => $moduleId]))],
     ];

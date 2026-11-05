@@ -108,10 +108,12 @@
                         @else
                             <span class="account-initial" aria-hidden="true">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
                         @endif
+                        @if ($chatUnread)<span class="account-dot" aria-hidden="true"></span>@endif
                     </summary>
                     <div class="account-pop">
                         <strong>{{ auth()->user()->name }}</strong>
                         <a href="{{ route('account.courses') }}">{{ __('account.my_courses') }}</a>
+                        <a class="account-chat" href="{{ auth()->user()->isAdmin() ? route('admin.chats.index') : route('account.chat') }}">{{ auth()->user()->isAdmin() ? __('account.tab_chat') : __('account.chat_title') }}@if ($chatUnread)<b class="account-count">{{ $chatUnread }}</b>@endif</a>
                         <a href="{{ route('account.orders') }}">{{ __('account.my_orders') }}</a>
                         <a href="{{ route('account.profile') }}">{{ __('account.profile') }}</a>
                         @if (auth()->user()->isAdmin())

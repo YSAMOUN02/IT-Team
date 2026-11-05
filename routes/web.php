@@ -6,6 +6,7 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\StudentAuthController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CourseController;
@@ -119,6 +120,9 @@ Route::middleware(['auth', 'no-store'])->group(function () {
     Route::get('/my/invoices/{invoice:number}', [AccountController::class, 'invoice'])->name('account.invoices.show');
     Route::get('/my/profile', [AccountController::class, 'profile'])->name('account.profile');
     Route::put('/my/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+    Route::get('/my/chat', [ChatController::class, 'show'])->name('account.chat');
+    Route::post('/my/chat', [ChatController::class, 'store'])->middleware('throttle:chat-send')->name('account.chat.store');
+    Route::get('/my/chat/new', [ChatController::class, 'poll'])->middleware('throttle:chat-poll')->name('account.chat.poll');
 
     // Checkout (ABA PayWay)
     Route::post('/courses/{course:slug}/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
@@ -213,6 +217,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('orders/{order}/recheck', [Admin\OrderController::class, 'recheck'])->name('orders.recheck');
         Route::post('orders/{order}/refund', [Admin\OrderController::class, 'refund'])->name('orders.refund');
         Route::post('orders/{order}/confirm', [Admin\OrderController::class, 'confirm'])->name('orders.confirm');
+        Route::get('chats', [Admin\ChatController::class, 'index'])->name('chats.index');
+        Route::get('chats/{user}', [Admin\ChatController::class, 'show'])->name('chats.show');
+        Route::post('chats/{user}', [Admin\ChatController::class, 'store'])->name('chats.store');
+        Route::get('chats/{user}/new', [Admin\ChatController::class, 'poll'])->middleware('throttle:chat-poll')->name('chats.poll');
+
+        Route::get('classes/{classroom}/students.csv', [Admin\ClassroomController::class, 'export'])->name('classes.export');
+        Route::post('classes/{classroom}/students', [Admin\ClassroomController::class, 'addStudents'])->name('classes.students.store');
+        Route::delete('classes/{classroom}/students/{user}', [Admin\ClassroomController::class, 'removeStudent'])->name('classes.students.destroy');
+        Route::post('students/{user}/classes', [Admin\ClassroomController::class, 'addToClass'])->name('students.classes.store');
+        Route::resource('classes', Admin\ClassroomController::class)->parameters(['classes' => 'classroom']);
         Route::get('students', [Admin\StudentController::class, 'index'])->name('students.index');
         Route::get('students/create', [Admin\StudentController::class, 'create'])->name('students.create');
         Route::post('students', [Admin\StudentController::class, 'store'])->name('students.store');

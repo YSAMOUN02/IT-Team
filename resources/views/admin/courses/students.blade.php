@@ -14,12 +14,25 @@
 
     <div class="form-grid">
         <section class="card">
-            <div class="card-head"><div><h2>Students in this course</h2><p>{{ $rows->count() }} enrolled · {{ $rows->filter(fn ($r) => $r['enrollment']->isActive())->count() }} can open it now · {{ $rows->filter(fn ($r) => $r['enrollment']->disabled_at)->count() }} turned off · {{ $rows->filter(fn ($r) => $r['enrollment']->completed_at)->count() }} completed</p></div></div>
+            <div class="card-head"><div><h2>Students in this course</h2><p>{{ $rows->count() }} enrolled{{ $class ? ' in this class' : '' }} · {{ $rows->filter(fn ($r) => $r['enrollment']->isActive())->count() }} can open it now · {{ $rows->filter(fn ($r) => $r['enrollment']->disabled_at)->count() }} turned off · {{ $rows->filter(fn ($r) => $r['enrollment']->completed_at)->count() }} completed</p></div></div>
+            @if ($classes->isNotEmpty())
+                <form class="toolbar" method="get">
+                    @include('admin.classes._filter', ['filterClasses' => $classes, 'filterClass' => $class?->id])
+                    @if ($class)
+                        <a class="btn btn-ghost btn-sm" href="{{ route('admin.classes.show', [$class, 'course' => $course->id]) }}">@include('admin.partials.icon', ['name' => 'grid']) Open the class</a>
+                    @endif
+                </form>
+            @endif
             @if ($rows->isEmpty())
                 <div class="empty-state">
                     <div class="ico">@include('admin.partials.icon', ['name' => 'users'])</div>
-                    <h3>No students yet</h3>
-                    <p>Students appear here when they buy the course, or when you give them access.</p>
+                    @if ($class)
+                        <h3>Nobody in “{{ $class->name }}” has this course yet</h3>
+                        <p>Give them access with the box on the right, or <a href="{{ route('admin.courses.students', $course) }}">show every student</a>.</p>
+                    @else
+                        <h3>No students yet</h3>
+                        <p>Students appear here when they buy the course, or when you give them access.</p>
+                    @endif
                 </div>
             @else
                 <div class="table-wrap">
@@ -36,6 +49,7 @@
                                             @if ($enrollment->user->isDisabled())<span class="status status-blocked">Account off</span>@endif
                                             <span class="row-sub">{{ $enrollment->user->email }}</span>
                                             @include('admin.students._course-line')
+                                            @include('admin.classes._chips', ['chipClasses' => $studentClasses[$enrollment->user_id] ?? collect()])
                                         </div>
                                     </div>
                                 </td>

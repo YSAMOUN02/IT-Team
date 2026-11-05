@@ -268,6 +268,6 @@ class CheckoutController extends Controller
 
     private function authorizeOrder(Request $request, Order $order): void
     {
-        abort_unless($request->user()->id === $order->user_id || $request->user()->isAdmin(), 404);
+        abort_unless((int) $request->user()->id === (int) $order->user_id || $request->user()->isAdmin(), 404);
     }
 }

@@ -23,6 +23,14 @@ class SearchController extends Controller
         if ($term !== '') {
             $groups['Courses'] = Course::where('title', 'like', $like)->orWhere('summary', 'like', $like)->take(10)->get()
                 ->map(fn ($c) => [$c->title, route('admin.courses.edit', $c), $c->mediaUrl() ?? $c->mediaUrl('icon'), $c->summary]);
+            $groups['Students'] = \App\Models\User::where('role', 'student')
+                ->where(fn ($q) => $q->where('name', 'like', $like)->orWhere('email', 'like', $like)->orWhere('phone', 'like', $like))
+                ->orderBy('name')->take(10)->get()
+                ->map(fn ($u) => [$u->name, route('admin.students.show', $u), null, $u->email.($u->phone ? ' · '.$u->phone : '')]);
+            $groups['Classes'] = \App\Models\Classroom::with('courses:id,title')
+                ->where(fn ($q) => $q->where('name', 'like', $like)->orWhere('teacher', 'like', $like))
+                ->orderBy('name')->take(10)->get()
+                ->map(fn ($c) => [$c->name, route('admin.classes.show', $c), null, trim($c->courses->pluck('title')->implode(' · ').($c->teacher ? ' · '.$c->teacher : ''), ' ·')]);
 
             foreach (Article::TYPES as $type => $label) {
                 $groups[$label] = Article::ofType($type)->where(fn ($q) => $q->where('title', 'like', $like)->orWhere('excerpt', 'like', $like))

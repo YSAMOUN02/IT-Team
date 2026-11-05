@@ -75,7 +75,7 @@ class InquiryController extends Controller
         } catch (Throwable $e) {
             Log::warning("Reply to message {$inquiry->id} ({$inquiry->email}) failed: ".$e->getMessage());
 
-            return back()->withInput()->with('reply_error', 'The email could not be sent: the mail server refused or did not answer. Your text is still here; try again in a moment.');
+            return back()->withInput()->with('reply_error', 'The email could not be sent: '.MailSetup::reason($e).'. Your text is still here.');
         }
 
         $inquiry->update(['replied_at' => now(), 'read_at' => $inquiry->read_at ?? now()]);

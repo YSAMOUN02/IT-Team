@@ -42,6 +42,18 @@
                             <p class="grant-label"><span>3</span> Payment <small>shown on their invoice</small></p>
                             @include('admin.students._payment-fields')
                         </div>
+                        @if ($classes->isNotEmpty())
+                            <div class="grant-step">
+                                <p class="grant-label">Class <small>optional</small></p>
+                                <select class="control" name="classroom_id" aria-label="Class">
+                                    <option value="">No class</option>
+                                    @foreach ($classes as $option)
+                                        <option value="{{ $option->id }}" @selected((int) old('classroom_id', request('class')) === $option->id)>{{ $option->name }}{{ $option->courses->isNotEmpty() ? ' · '.$option->courses->pluck('title')->implode(', ') : '' }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="help">Put them in a class, so its teacher follows them.</span>
+                            </div>
+                        @endif
                         <label class="check grant-mail"><input type="checkbox" name="send_email" value="1" checked> Email the student their sign-in (and the course link)</label>
                         <button class="btn btn-primary btn-block">@include('admin.partials.icon', ['name' => 'plus']) Add student</button>
                     </div>

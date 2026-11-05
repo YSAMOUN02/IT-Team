@@ -9,6 +9,7 @@
             ['Visitors', route('admin.analytics'), request()->routeIs('admin.analytics'), 'chart', ['count', $navCounts['online']]],
             ['Tracking', route('admin.tracking'), request()->routeIs('admin.tracking'), 'calendar', null],
             ['Messages', route('admin.inquiries.index'), request()->routeIs('admin.inquiries.*'), 'inbox', ['badge', $navCounts['inquiries']]],
+            ['Chat', route('admin.chats.index'), request()->routeIs('admin.chats.*'), 'chat', ['badge', $navCounts['chats']]],
             ['Subscribers', route('admin.subscribers.index'), request()->routeIs('admin.subscribers.*'), 'mail', ['count', $navCounts['subscribers']]],
         ]],
         ['B', 'Content', [
@@ -20,6 +21,7 @@
         ['C', 'Sales', [
             ['Orders', route('admin.orders.index'), request()->routeIs('admin.orders.*'), 'courses', $navCounts['orders_review'] ? ['badge', $navCounts['orders_review']] : ['count', $navCounts['orders_paid']]],
             ['Students', route('admin.students.index'), request()->routeIs('admin.students.*'), 'users', ['count', $navCounts['students']]],
+            ['Classes', route('admin.classes.index'), request()->routeIs('admin.classes.*'), 'grid', ['count', $navCounts['classes']]],
             ['Exam results', route('admin.results.index'), request()->routeIs('admin.results.*'), 'check', null],
             ['Re-exam requests', route('admin.retake-requests.index'), request()->routeIs('admin.retake-requests.*'), 'clock', ['badge', $navCounts['retakes']]],
         ]],
@@ -95,6 +97,20 @@
                 @include('admin.partials.icon', ['name' => 'external'])
             </a>
         </div>
+        <script>
+            // The menu scrolls on its own: keep it where it was between pages instead of jumping back to the top,
+            // and make sure the open page's item is in view. Runs before the first paint, so nothing moves.
+            (function () {
+                var nav = document.currentScript.parentElement.querySelector('.side-nav'), key = 'admin-nav-scroll';
+                try { nav.scrollTop = +(sessionStorage.getItem(key) || 0); } catch (e) {}
+                var on = nav.querySelector('a.active');
+                if (on) {
+                    var r = on.getBoundingClientRect(), box = nav.getBoundingClientRect();
+                    if (r.top < box.top || r.bottom > box.bottom) nav.scrollTop += r.top - box.top - (box.height - r.height) / 2;
+                }
+                addEventListener('pagehide', function () { try { sessionStorage.setItem(key, nav.scrollTop); } catch (e) {} });
+            })();
+        </script>
     </aside>
     <div class="scrim" data-scrim hidden></div>
 

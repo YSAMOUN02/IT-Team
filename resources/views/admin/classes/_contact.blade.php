@@ -1,0 +1,3 @@
+{{-- Reach one student: chat or email. A red dot = they wrote and nobody has read it yet. --}}
+<a @class(['btn btn-ghost btn-sm btn-icon', 'has-unread' => ! empty($unreadChats[$student->id])]) href="{{ route('admin.chats.show', $student) }}" title="Chat with {{ $student->name }}" aria-label="Chat with {{ $student->name }}">@include('admin.partials.icon', ['name' => 'chat'])</a>
+<a class="btn btn-ghost btn-sm btn-icon" href="{{ route('admin.chats.show', [$student, 'via' => 'email']) }}" title="Email {{ $student->name }}" aria-label="Email {{ $student->name }}">@include('admin.partials.icon', ['name' => 'mail'])</a>

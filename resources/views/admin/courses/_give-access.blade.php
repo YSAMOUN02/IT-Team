@@ -13,12 +13,18 @@
         'renew' => $hadBefore->has($s->id),
     ])->values();
     $newMode = old('mode') === 'new';
+    // From a class page ("Give access →"): that student is picked and the class is chosen.
+    $preEmail = $newMode ? '' : (old('email') ?? request('email'));
+    $preClass = (int) old('classroom_id', request('class'));
 @endphp
-<section class="card">
+<section class="card" id="give-access">
     <div class="card-head"><div><h2>Give access</h2><p>Paid in cash, by ABA, or a scholarship.</p></div></div>
     <form class="card-body grant" method="post" action="{{ route('admin.courses.students.grant', $course) }}" data-grant data-access-form>
         @csrf
         <input type="hidden" name="mode" value="{{ $newMode ? 'new' : 'existing' }}" data-grant-mode>
+        @if (request('email') && $classes->firstWhere('id', $preClass))
+            <input type="hidden" name="back_to_class" value="1">
+        @endif
 
         {{-- 1 · Who --}}
         <div class="grant-step">
@@ -29,7 +35,7 @@
             </div>
 
             <div class="grant-pane" data-grant-pane="existing" @if ($newMode) hidden @endif>
-                <input type="hidden" name="email" value="{{ $newMode ? '' : old('email') }}" data-grant-email @disabled($newMode)>
+                <input type="hidden" name="email" value="{{ $preEmail }}" data-grant-email @disabled($newMode)>
                 <div class="picked" data-grant-picked hidden>
                     <span class="avatar" data-picked-initials></span>
                     <span class="picked-text"><b data-picked-name></b><small data-picked-meta></small></span>
@@ -76,6 +82,20 @@
             <p class="grant-label"><span>3</span> Payment <small>shown on their invoice</small></p>
             @include('admin.students._payment-fields')
         </div>
+
+        {{-- 4 · Class (only when the course has classes) --}}
+        @if ($classes->isNotEmpty())
+            <div class="grant-step">
+                <p class="grant-label"><span>4</span> Class <small>optional</small></p>
+                <select class="control" name="classroom_id" aria-label="Add to a class">
+                    <option value="">No class</option>
+                    @foreach ($classes as $option)
+                        <option value="{{ $option->id }}" @selected($preClass === $option->id)>{{ $option->name }} ({{ $option->students_count }} {{ str('student')->plural($option->students_count) }})</option>
+                    @endforeach
+                </select>
+                <span class="help">Also put them in this class, so its teacher follows them.</span>
+            </div>
+        @endif
 
         <label class="check grant-mail"><input type="checkbox" name="send_email" value="1" checked> Email the student the course link and sign-in</label>
         <button class="btn btn-primary btn-block" data-grant-submit>@include('admin.partials.icon', ['name' => 'check']) <span data-grant-submit-text>Give access</span></button>

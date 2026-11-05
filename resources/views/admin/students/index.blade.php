@@ -20,6 +20,7 @@
                 <option value="current" @selected(request('show') === 'current')>Studying now</option>
                 <option value="off" @selected(request('show') === 'off')>Turned off</option>
             </select>
+            @include('admin.classes._filter', ['filterClasses' => $classes, 'filterClass' => request('class')])
             <span class="toolbar-count">{{ $students->total() }} students</span>
         </form>
         @if ($students->isEmpty())
@@ -51,6 +52,7 @@
                                         <a href="{{ route('admin.students.show', $student) }}">{{ $student->name }}</a>
                                         @if ($student->disabled_at)<span class="status status-blocked">Account off</span>@endif
                                         <span class="row-sub">{{ $student->email }}@if ($student->phone)<span class="show-sm"> · {{ $student->phone }}</span>@endif</span>
+                                        @include('admin.classes._chips', ['chipClasses' => $student->classrooms->sortBy('name')->values()])
                                         {{-- Phones: the courses sit under the name instead of in their own column. --}}
                                         @if ($chips->isNotEmpty())
                                             <div class="course-chips show-sm-flex">

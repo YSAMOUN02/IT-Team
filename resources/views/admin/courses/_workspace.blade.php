@@ -1,4 +1,4 @@
-{{-- Course workspace header: tabs, preview links and the setup checklist. $course, $tab = details|curriculum|students|results --}}
+{{-- Course workspace header: tabs, preview links and the setup checklist. $course, $tab = details|curriculum|students|results (Classes opens the class list for the course) --}}
 @php
     $setup = \App\Support\CourseSetup::for($course);
     $missing = count(array_filter($setup->steps, fn ($s) => ! $s['done'] && ! $s['optional']));
@@ -29,6 +29,7 @@
         <a href="{{ route('admin.courses.curriculum', $course) }}" @class(['on' => $tab === 'curriculum'])>@include('admin.partials.icon', ['name' => 'grid']) Curriculum <span class="mono muted">{{ $course->lessons()->count() + $course->quizzes()->count() }}</span></a>
         <a href="{{ route('admin.courses.students', $course) }}" @class(['on' => $tab === 'students'])>@include('admin.partials.icon', ['name' => 'users']) Students <span class="mono muted">{{ $course->enrollments()->count() }}</span></a>
         <a href="{{ route('admin.courses.results', $course) }}" @class(['on' => $tab === 'results'])>@include('admin.partials.icon', ['name' => 'check']) Results</a>
+        <a href="{{ route('admin.classes.index', ['course' => $course->id]) }}" title="Classes that study this course">@include('admin.partials.icon', ['name' => 'grid']) Classes <span class="mono muted">{{ $course->classrooms()->count() }}</span></a>
 
         <details class="setup" @if ($setup->percent < 100 && $tab === 'curriculum') open @endif>
             <summary>

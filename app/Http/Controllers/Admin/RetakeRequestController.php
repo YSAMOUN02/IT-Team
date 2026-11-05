@@ -28,6 +28,7 @@ class RetakeRequestController extends Controller
         return view('admin.retake-requests.index', [
             'requests' => $requests,
             'tries' => $tries,
+            'studentClasses' => \App\Models\Classroom::forStudents($requests->pluck('user_id')),
             'status' => $status,
             'counts' => RetakeRequest::selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),
         ]);

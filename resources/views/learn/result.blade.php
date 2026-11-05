@@ -16,7 +16,7 @@
     $seconds = $attempt->started_at && $attempt->submitted_at?->gt($attempt->started_at) ? (int) $attempt->started_at->diffInSeconds($attempt->submitted_at) : null;
     $practice = $quiz->isPractice();
     $celebrate = $attempt->passed && ! $practice;
-    $courseDone = $progress->complete && $certificateCode && in_array($quiz->type, ['final', 'quiz'], true);
+    $courseDone = $progress->complete && $certificateCode && $quiz->isRequired();
 @endphp
 
 @section('content')

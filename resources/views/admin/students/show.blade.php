@@ -7,7 +7,8 @@
     <span aria-hidden="true">/</span><span>Student</span>
 @endsection
 @section('actions')
-    <a class="btn btn-ghost" href="mailto:{{ $student->email }}">@include('admin.partials.icon', ['name' => 'mail']) Email</a>
+    <a class="btn btn-ghost" href="{{ route('admin.chats.show', $student) }}">@include('admin.partials.icon', ['name' => 'chat']) Chat</a>
+    <a class="btn btn-ghost" href="{{ route('admin.chats.show', [$student, 'via' => 'email']) }}">@include('admin.partials.icon', ['name' => 'mail']) Email</a>
     <form method="post" action="{{ route('admin.students.update', $student) }}"
           @unless ($student->disabled_at) data-confirm="Turn off {{ $student->name }}'s account? They are signed out at once and cannot sign in or open any course until you turn it on again. Nothing is deleted." @endunless>
         @csrf @method('PATCH')
@@ -103,6 +104,42 @@
                             </li>
                         @endforeach
                     </ul>
+                @endif
+            </section>
+
+            <section class="card">
+                <div class="card-head"><div><h2>Classes</h2><p>Groups this student studies with.</p></div><a href="{{ route('admin.classes.index') }}">All classes</a></div>
+                @if ($classes->isEmpty())
+                    <div class="empty-state"><p>Not in a class yet.</p></div>
+                @else
+                    <ul class="feed">
+                        @foreach ($classes as $class)
+                            <li>
+                                <div class="feed-main">
+                                    <a class="feed-title" href="{{ route('admin.classes.show', $class) }}">{{ $class->name }}</a>
+                                    <span class="feed-meta">{{ $class->courses->pluck('title')->implode(' · ') }}@if ($class->teacher) · {{ $class->teacher }}@endif @if ($class->dates()) · {{ $class->dates() }}@endif</span>
+                                </div>
+                                <span class="status {{ ['upcoming' => 'status-sched', 'running' => 'status-on', 'finished' => 'status-off'][$class->status()] }}">{{ \App\Models\Classroom::STATUSES[$class->status()] }}</span>
+                                <form method="post" action="{{ route('admin.classes.students.destroy', [$class, $student]) }}"
+                                      data-confirm="Take {{ $student->name }} out of “{{ $class->name }}”? Their course access and progress stay as they are.">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-ghost btn-sm btn-icon" title="Take out of the class" aria-label="Take out of {{ $class->name }}">@include('admin.partials.icon', ['name' => 'trash'])</button>
+                                </form>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+                @if ($otherClasses->isNotEmpty())
+                    {{-- Put the student in another class without leaving this page. --}}
+                    <form class="card-foot add-to-class" method="post" action="{{ route('admin.students.classes.store', $student) }}">
+                        @csrf
+                        <select class="control" name="classroom_id" aria-label="Class">
+                            @foreach ($otherClasses as $option)
+                                <option value="{{ $option->id }}">{{ $option->name }}{{ $option->courses->isNotEmpty() ? ' · '.$option->courses->pluck('title')->implode(', ') : '' }}</option>
+                            @endforeach
+                        </select>
+                        <button class="btn btn-ghost">@include('admin.partials.icon', ['name' => 'plus']) Add to class</button>
+                    </form>
                 @endif
             </section>
 

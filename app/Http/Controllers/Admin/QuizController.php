@@ -25,6 +25,7 @@ class QuizController extends Controller
                 'show_answers' => true,
                 'is_published' => true,
             ], match ($type) {
+                'midterm' => ['time_limit' => 45, 'shuffle_questions' => true, 'max_attempts' => 3],
                 'mock' => ['time_limit' => 30, 'shuffle_questions' => true],
                 'final' => ['time_limit' => 45, 'shuffle_questions' => true, 'max_attempts' => 3, 'pass_percent' => 75],
                 default => [],

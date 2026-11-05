@@ -106,6 +106,18 @@ class User extends Authenticatable
         return $this->hasMany(Invoice::class);
     }
 
+    /** Classes the student is in (Admin > Classes). */
+    /** This student's conversation with the school (My account > Chat, Admin > Chat). */
+    public function chatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class, 'student_id');
+    }
+
+    public function classrooms(): BelongsToMany
+    {
+        return $this->belongsToMany(Classroom::class, 'classroom_student')->withTimestamps();
+    }
+
     public function completedLessons(): BelongsToMany
     {
         return $this->belongsToMany(CourseLesson::class, 'lesson_progress')->withPivot('completed_at');

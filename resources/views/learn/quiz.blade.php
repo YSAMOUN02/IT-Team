@@ -39,7 +39,7 @@
             </div>
         @endif
 
-        @if ($quiz->questions_count === 0)
+        @if ((int) $quiz->questions_count === 0)
             <p class="muted">—</p>
         @elseif ($open && ! $open->isOverdue())
             <a class="btn btn-primary btn-lg" href="{{ route('learn.attempt', [$course->slug, $quiz->slug, $open]) }}">{{ __('account.resume') }} →</a>

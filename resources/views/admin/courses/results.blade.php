@@ -28,18 +28,21 @@
     </div>
 
     <div class="card">
-        <div class="toolbar">
+        <form class="toolbar" method="get">
+            @if ($show)<input type="hidden" name="show" value="{{ $show }}">@endif
             <nav class="segmented" aria-label="Show">
-                <a href="{{ route('admin.courses.results', $course) }}" @class(['on' => ! $show])>All <span class="muted mono">{{ $rows->count() }}</span></a>
+                <a href="{{ route('admin.courses.results', array_filter([$course, 'class' => $class?->id])) }}" @class(['on' => ! $show])>All <span class="muted mono">{{ $rows->count() }}</span></a>
                 @foreach ($statuses as $key => $label)
                     @if ($counts[$key] ?? 0)
-                        <a href="{{ route('admin.courses.results', [$course, 'show' => $key]) }}" @class(['on' => $show === $key])>{{ $label }} <span class="muted mono">{{ $counts[$key] }}</span></a>
+                        <a href="{{ route('admin.courses.results', array_filter([$course, 'show' => $key, 'class' => $class?->id])) }}" @class(['on' => $show === $key])>{{ $label }} <span class="muted mono">{{ $counts[$key] }}</span></a>
                     @endif
                 @endforeach
             </nav>
-            <a class="btn btn-ghost btn-sm" href="{{ route('admin.courses.results.export', array_filter([$course, 'show' => $show])) }}">@include('admin.partials.icon', ['name' => 'upload']) Download for Excel</a>
+            @include('admin.classes._filter', ['filterClasses' => $classes, 'filterClass' => $class?->id])
+            @if ($class)<a class="btn btn-ghost btn-sm" href="{{ route('admin.classes.show', [$class, 'course' => $course->id]) }}">@include('admin.partials.icon', ['name' => 'grid']) Open the class</a>@endif
+            <a class="btn btn-ghost btn-sm" href="{{ route('admin.courses.results.export', array_filter([$course, 'show' => $show, 'class' => $class?->id])) }}">@include('admin.partials.icon', ['name' => 'upload']) Download for Excel</a>
             <span class="toolbar-count">{{ $tests->count() }} tests · practice tests left out</span>
-        </div>
+        </form>
 
         @if ($shown->isEmpty())
             <div class="empty-state">

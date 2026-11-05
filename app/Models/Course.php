@@ -83,6 +83,12 @@ class Course extends Model
         return $this->hasMany(Enrollment::class);
     }
 
+    /** Classes that study this course (Admin > Classes). */
+    public function classrooms(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Classroom::class, 'classroom_course');
+    }
+
     /** Free course: students enrol with an account, no payment. */
     public function isFree(): bool
     {

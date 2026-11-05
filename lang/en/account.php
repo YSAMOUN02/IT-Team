@@ -191,6 +191,7 @@ return [
     // Quizzes
     'quiz_type_practice' => 'Practice',
     'quiz_type_quiz' => 'Module quiz',
+    'quiz_type_midterm' => 'Mid-term exam',
     'quiz_type_mock' => 'Mock exam',
     'quiz_type_final' => 'Final exam',
     'questions_count' => '{1} 1 question|[2,*] :count questions',
@@ -236,6 +237,7 @@ return [
     'false' => 'False',
     'note_practice' => 'Check each answer as you go and read the explanation. Practice does not count toward your grade.',
     'note_quiz' => 'Pass this quiz to complete the module.',
+    'note_midterm' => 'Pass the mid-term exam to complete the course.',
     'note_mock' => 'A timed rehearsal of the final exam. Take it as often as you like.',
     'note_final' => 'Pass the final exam to earn your certificate.',
     'answered' => ':done of :total answered',
@@ -369,4 +371,19 @@ return [
     'view' => 'View',
     // Replies to contact messages (email)
     'reply_quote_head' => 'On :date, :name wrote:',
+
+    // Chat with the school
+    'tab_chat' => 'Chat',
+    'chat_title' => 'Chat with us',
+    'chat_intro' => 'Ask about your courses, exercises or payments. We answer here as soon as we can.',
+    'chat_empty' => 'No messages yet. Write your question below and we will answer here.',
+    'chat_message' => 'Message',
+    'chat_placeholder' => 'Write a message…',
+    'chat_send' => 'Send',
+    'chat_hint' => 'Enter sends. Shift + Enter makes a new line.',
+    'chat_by_email' => 'Sent to you by email',
+    'chat_error' => 'The message was not sent. Check your connection and try again.',
+    'chat_write_first' => 'Write a message first.',
+    'chat_email_footer' => 'You can also answer in the chat on our website:',
+    'chat_email_link' => 'Open the chat',
 ];

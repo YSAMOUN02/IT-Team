@@ -53,13 +53,22 @@ class CourseController extends Controller
     }
 
     /** Students of one course, with progress; access can be given by email here too. */
-    public function students(Course $course)
+    public function students(Request $request, Course $course)
     {
+        // The course's classes: to show each student's class, to list one class only, and for Give access.
+        $classes = $course->classrooms()->withCount('students')->orderBy('name')->get();
+        $class = $classes->firstWhere('id', $request->integer('class'));
+        $rows = $course->enrollments()->with('user')->latest()
+            ->when($class, fn ($q) => $q->whereIn('user_id', \App\Models\Classroom::studentIds($class->id)))->get()
+            ->filter(fn ($e) => $e->user)
+            ->map(fn ($e) => ['enrollment' => $e, 'progress' => CourseProgress::for($e->user, $course)]);
+
         return view('admin.courses.students', [
             'course' => $course,
-            'rows' => $course->enrollments()->with('user')->latest()->get()
-                ->filter(fn ($e) => $e->user)
-                ->map(fn ($e) => ['enrollment' => $e, 'progress' => CourseProgress::for($e->user, $course)]),
+            'classes' => $classes,
+            'class' => $class,
+            'studentClasses' => \App\Models\Classroom::forStudents($rows->pluck('enrollment.user_id'), $course->id),
+            'rows' => $rows,
             // For "Give access": students who cannot open this course right now (never had it, expired
             // or turned off), newest first; a long list is cut, any other email can still be typed.
             'pickable' => User::where('role', 'student')->whereNull('disabled_at')
@@ -78,7 +87,10 @@ class CourseController extends Controller
             'amount' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'payment_method' => ['nullable', 'in:'.implode(',', array_keys(\App\Models\Invoice::METHODS))],
             'invoice_note' => ['nullable', 'string', 'max:190'],
+            'classroom_id' => ['nullable', 'integer'],
         ]);
+        // "Add to a class": only a class of this course.
+        $classroom = $request->filled('classroom_id') ? $course->classrooms()->find($data['classroom_id']) : null;
 
         $user = User::findByEmail($data['email']);
         if (! $user && blank($data['name'] ?? null)) {
@@ -100,9 +112,16 @@ class CourseController extends Controller
 
             return [$user, $new];
         });
+        $classroom?->students()->syncWithoutDetaching([$user->id]);
         $mailed = $request->boolean('send_email') ? \App\Mail\CourseAccess::sendTo($user, $course, $new['password'] ?? null) : null;
 
-        return back()->with('status', ($new ? 'New student account made. ' : '')."{$user->name} can now open {$course->title}.".\App\Mail\CourseAccess::note($mailed))
+        // Came from a class page ("Give access →"): go back there, the student now shows as learning.
+        $back = $request->filled('back_to_class') && $classroom
+            ? redirect()->route('admin.classes.show', $classroom)
+            : back();
+
+        return $back->with('status', ($new ? 'New student account made. ' : '')."{$user->name} can now open {$course->title}."
+                .($classroom ? " In class “{$classroom->name}”." : '').\App\Mail\CourseAccess::note($mailed))
             ->with('new_student', $new);
     }
 

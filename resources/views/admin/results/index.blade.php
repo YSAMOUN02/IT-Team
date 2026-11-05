@@ -34,6 +34,7 @@
                     @endforeach
                 </select>
             @endunless
+            @include('admin.classes._filter', ['filterClasses' => $classes, 'filterClass' => request('class')])
             <select name="result" aria-label="Result" onchange="this.form.submit()">
                 <option value="">Any result</option>
                 @foreach (\App\Http\Controllers\Admin\ResultController::RESULTS as $value => $label)
@@ -67,7 +68,7 @@
                             <td>
                                 <div class="row-title">
                                     <span class="avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($attempt->user->name, 0, 1)) }}</span>
-                                    <div><a href="{{ route('admin.students.show', $attempt->user) }}">{{ $attempt->user->name }}</a><span class="row-sub">{{ $attempt->user->email }}</span></div>
+                                    <div><a href="{{ route('admin.students.show', $attempt->user) }}">{{ $attempt->user->name }}</a><span class="row-sub">{{ $attempt->user->email }}</span>@include('admin.classes._chips', ['chipClasses' => $studentClasses[$attempt->user_id] ?? collect()])</div>
                                 </div>
                             </td>
                             <td>

@@ -4,6 +4,7 @@
     $typeHelp = [
         'practice' => 'Students check each answer straight away and see the explanation. Unlimited, untimed, not graded.',
         'quiz' => 'End-of-module quiz. Must be passed for the course to count as completed.',
+        'midterm' => 'Timed exam halfway through the course. Must be passed for the course to count as completed.',
         'mock' => 'Timed rehearsal of the final exam. Unlimited tries; does not count toward completion.',
         'final' => 'Timed final exam. Must be passed to get the certificate.',
     ];

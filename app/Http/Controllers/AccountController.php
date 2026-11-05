@@ -59,7 +59,7 @@ class AccountController extends Controller
     /** One invoice, ready to print or save as PDF. Students only see their own. */
     public function invoice(Request $request, \App\Models\Invoice $invoice)
     {
-        abort_unless($invoice->user_id === $request->user()->id, 404);
+        abort_unless((int) $invoice->user_id === (int) $request->user()->id, 404);
 
         return view('invoices.show', ['invoice' => $invoice, 'back' => route('account.invoices')]);
     }
