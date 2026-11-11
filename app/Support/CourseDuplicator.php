@@ -51,7 +51,7 @@ class CourseDuplicator
                     $newQuestion->image = $this->copyPublic($question->image);
                     $newQuestion->save();
                     foreach ($question->options as $option) {
-                        $newQuestion->options()->create($option->only('text', 'is_correct', 'position'));
+                        $newQuestion->options()->create($option->only('text', 'match_text', 'is_correct', 'slot', 'position'));
                     }
                 }
             }

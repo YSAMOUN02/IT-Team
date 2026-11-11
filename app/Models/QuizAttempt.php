@@ -58,7 +58,8 @@ class QuizAttempt extends Model
     }
 
     /**
-     * Grade and close the attempt. $answers = [question_id => [option ids]].
+     * Grade and close the attempt. $answers = [question_id => answer]; the answer's shape depends on
+     * the question type (see QuizQuestion).
      * Unanswered questions score zero.
      */
     public function grade(array $answers): self
@@ -69,9 +70,7 @@ class QuizAttempt extends Model
         $max = 0;
 
         foreach ($questions as $question) {
-            $chosen = array_map('intval', (array) ($answers[$question->id] ?? []));
-            $valid = $question->options->pluck('id')->map(fn ($id) => (int) $id)->all();
-            $chosen = array_values(array_intersect($chosen, $valid));
+            $chosen = $question->normalizeAnswer($answers[$question->id] ?? null);
             $clean[$question->id] = $chosen;
             $max += $question->points;
             if ($question->isAnsweredCorrectly($chosen)) {

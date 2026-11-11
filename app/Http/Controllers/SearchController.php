@@ -13,7 +13,7 @@ class SearchController extends Controller
         $term = trim((string) $request->query('s', ''));
         $like = '%'.addcslashes($term, '%_\\').'%';
 
-        $courses = $term === '' ? collect() : Course::published()
+        $courses = $term === '' ? collect() : Course::published()->forCards()
             ->where(fn ($q) => $q->where('title', 'like', $like)->orWhere('summary', 'like', $like)->orWhere('body', 'like', $like))
             ->get();
 

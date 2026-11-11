@@ -60,7 +60,7 @@
     @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Kantumruy+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
     <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ @filemtime(public_path('css/site.css')) }}">
     @if ($adsPublisher = \App\Support\Ads::publisherId())
         <meta name="google-adsense-account" content="{{ $adsPublisher }}">
@@ -157,9 +157,9 @@
             <a class="btn btn-primary btn-block" href="{{ link_url(setting('header_button_url', '/contact')) }}">{{ setting('header_button_label') }}</a>
         @endif
         @auth
-            <a class="mobile-signin" href="{{ route('account.courses') }}">{{ __('account.my_courses') }}</a>
+            <a class="btn btn-outline btn-block mobile-signin" href="{{ route('account.courses') }}">{{ __('account.my_courses') }}</a>
         @else
-            <a class="mobile-signin" href="{{ route('login') }}">{{ __('site.sign_in') }}</a>
+            <a class="btn btn-outline btn-block mobile-signin" href="{{ route('login') }}">{{ __('site.sign_in') }}</a>
         @endauth
     </div>
 </div>

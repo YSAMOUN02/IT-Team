@@ -184,6 +184,12 @@ class Course extends Model
         return $query->where('is_published', true)->orderBy('sort_order')->orderBy('id');
     }
 
+    /** What a course card shows: its plans (price, discount) and how many lessons are published. */
+    public function scopeForCards(Builder $query): Builder
+    {
+        return $query->with('plans')->withCount(['lessons' => fn ($lessons) => $lessons->where('is_published', true)]);
+    }
+
     public function url(): string
     {
         return route('courses.show', ['course' => $this->slug]);

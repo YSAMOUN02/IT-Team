@@ -61,6 +61,7 @@ fills the database:
 - **Course builder**: Admin → Courses → *Curriculum*. A course has modules; a
   module holds lessons (video link or MP4, notes, practice workbook + solution)
   and tests: *Practice* (instant feedback), *Module quiz*, *Mid-term exam* (timed, limited attempts), *Mock exam* (timed)
+  Question types: one or several correct answers, true/false, *short answer* (accepted answers; capitals, spaces and Khmer zero-width spaces ignored), *matching* (pairs, right side shuffled), *ordering* (items shuffled; drag or arrows) and *drag & drop* (`___` in the question marks each blank; each word gets its blank number, words without one are distractors; drag, or tap a word then a blank). Every type is all-or-nothing and works in practice mode and in both reviews.
   and *Final exam* (timed, limited attempts). Lessons/tests can be free previews.
 - **Completion**: every lesson done + every module quiz, mid-term and final exam passed →
   a printable certificate with a public verification link (`/certificates/{code}`).
@@ -244,6 +245,17 @@ not available, checkout says so. Receipt emails need real mail settings
   tracker at the end of `public/js/site.js`.
 - Footer newsletter sign-ups: Admin → *Subscribers* (CSV export).
 
+## Design of the public site
+
+The site teaches Excel, so its look borrows from a worksheet. The rules live at the top of `public/css/site.css`.
+
+- **Colours and shape** are the variables in `:root`: brand indigo `--accent` and violet `--accent-2`, Excel green `--green` as the second voice (free, done, small marks), ink and tints that lean to indigo, `--radius` 14px for cards and `--radius-sm` 10px for buttons and inputs. Chips and badges stay round.
+- **Type**: Plus Jakarta Sans for English letters and Kantumruy Pro for Khmer (`--font`), JetBrains Mono (`--mono`) only for small technical labels. Do not letter-space Khmer text (see the `:lang(km)` rule).
+- **The sheet**: a faint cell grid behind the home hero, page headers, sign-in pages and dark bands ("The sheet" block). The home hero's photo and any course or article card under the pointer wear a selected cell's outline with its small fill handle at the corner.
+- **Home page**: the hero stays simple (white card over a large photo). Section headings are numbered 01, 02… by a CSS counter on `body.page-home`, so adding or hiding a block renumbers the rest.
+- **Course card** (`partials/course-card`): cover picture (a drawn one while none is uploaded), discount or "free" flag, learners, lessons count, lowest price. The title's link is stretched over the whole card; load courses for cards with `Course::forCards()`.
+- **Course page**: the cover sits on the price card; on phones a bar with the price and the way in stays at the bottom edge until the price card is on screen.
+- **Logo**: the picture from Settings; without one, the round emblem (the favicon) beside the logo text.
 ## Tests
 
 `php artisan test` covers PayWay signing/verification, access rules and quiz grading.

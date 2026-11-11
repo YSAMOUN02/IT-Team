@@ -65,6 +65,8 @@ class QuestionController extends Controller
             'image' => $this->imageRule(),
             'options' => ['array'],
             'options.*.text' => ['nullable', 'string', 'max:1000'],
+            'options.*.match' => ['nullable', 'string', 'max:1000'],
+            'options.*.slot' => ['nullable', 'integer', 'min:1', 'max:50'],
             'correct' => ['nullable'],
             'tf_answer' => ['nullable', Rule::in(['true', 'false'])],
         ], $this->imageMessages(['image' => 'Picture']));
@@ -88,9 +90,9 @@ class QuestionController extends Controller
             // deleting and re-adding them would leave every earlier attempt "not answered".
             $existing = $question->options()->get()->keyBy('id');
             $kept = [];
-            foreach ($options as $i => [$key, $text, $correct]) {
+            foreach ($options as $i => [$key, $text, $correct, $match, $slot]) {
                 $option = $existing->get((int) $key) ?? $question->options()->make();
-                $option->fill(['text' => $text, 'is_correct' => $correct, 'position' => $i + 1])->save();
+                $option->fill(['text' => $text, 'match_text' => $match, 'is_correct' => $correct, 'slot' => $slot, 'position' => $i + 1])->save();
                 $kept[] = $option->id;
             }
             $question->options()->whereKeyNot($kept)->delete();
@@ -105,7 +107,7 @@ class QuestionController extends Controller
      * The answers from the form as [key, text, correct]. A key that is the id of one of the question's
      * saved answers updates that answer; any other key adds a new one.
      *
-     * @return list<array{0: int|string, 1: string, 2: bool}>
+     * @return list<array{0: int|string, 1: string, 2: bool, 3: ?string, 4: ?int}>
      */
     private function optionsFrom(Request $request, array $data, QuizQuestion $question): array
     {
@@ -119,9 +121,13 @@ class QuestionController extends Controller
             [$yes, $no] = $saved->count() === 2 ? $saved->all() : [null, null];
 
             return [
-                [$yes?->id ?? 'true', $yes?->text ?? __('account.true'), $answer === 'true'],
-                [$no?->id ?? 'false', $no?->text ?? __('account.false'), $answer === 'false'],
+                [$yes?->id ?? 'true', $yes?->text ?? __('account.true'), $answer === 'true', null, null],
+                [$no?->id ?? 'false', $no?->text ?? __('account.false'), $answer === 'false', null, null],
             ];
+        }
+
+        if (! in_array($data['type'], QuizQuestion::CHOICE_TYPES, true)) {
+            return $this->otherOptionsFrom($data);
         }
 
         $correct = array_map('strval', (array) ($data['correct'] ?? []));
@@ -129,7 +135,7 @@ class QuestionController extends Controller
         foreach ($data['options'] ?? [] as $key => $option) {
             $text = trim((string) ($option['text'] ?? ''));
             if ($text !== '') {
-                $options[] = [$key, $text, in_array((string) $key, $correct, true)];
+                $options[] = [$key, $text, in_array((string) $key, $correct, true), null, null];
             }
         }
 
@@ -145,5 +151,57 @@ class QuestionController extends Controller
         }
 
         return $options;
+    }
+/** Short answer, matching, ordering and drag & drop: their rows, checked for what each type needs. */
+    private function otherOptionsFrom(array $data): array
+    {
+        $options = [];
+        $halfPair = false;
+        foreach ($data['options'] ?? [] as $key => $option) {
+            $text = trim((string) ($option['text'] ?? ''));
+            $match = trim((string) ($option['match'] ?? ''));
+            $slot = isset($option['slot']) && $option['slot'] !== '' ? (int) $option['slot'] : null;
+            if ($data['type'] === 'matching' && ($text === '') !== ($match === '')) {
+                $halfPair = true;
+            }
+            if ($text === '' || ($data['type'] === 'matching' && $match === '')) {
+                continue;
+            }
+            $options[] = [
+                $key, $text,
+                $data['type'] !== 'dragdrop' || $slot !== null, // a drag & drop word with no blank is an extra
+                $data['type'] === 'matching' ? $match : null,
+                $data['type'] === 'dragdrop' ? $slot : null,
+            ];
+        }
+
+        $error = match ($data['type']) {
+            'short' => $options === [] ? 'Add at least one accepted answer.' : null,
+            'matching' => $halfPair ? 'Fill in both sides of every pair.' : (count($options) < 2 ? 'Add at least two pairs.' : null),
+            'ordering' => count($options) < 2 ? 'Add at least two items.' : null,
+            'dragdrop' => $this->dragDropError($data['prompt'], $options),
+        };
+        if ($error) {
+            throw ValidationException::withMessages(['options' => $error]);
+        }
+
+        return $options;
+    }
+
+    private function dragDropError(string $prompt, array $options): ?string
+    {
+        $blanks = preg_match_all(QuizQuestion::BLANK, $prompt);
+        if ($blanks === 0) {
+            return 'Write ___ (three underscores) in the question where each blank goes.';
+        }
+        $slots = array_count_values(array_filter(array_column($options, 4)));
+        for ($n = 1; $n <= $blanks; $n++) {
+            if (($slots[$n] ?? 0) !== 1) {
+                return "Give blank $n exactly one word.";
+            }
+        }
+        $beyond = array_filter(array_keys($slots), fn ($n) => $n > $blanks);
+
+        return $beyond ? 'The question has '.$blanks.' '.($blanks === 1 ? 'blank' : 'blanks').', but a word is set for blank '.min($beyond).'.' : null;
     }
 }

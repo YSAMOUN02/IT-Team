@@ -1001,3 +1001,20 @@ a.kpi:hover { border-color: #cfd0f5; }
 }
 .chat-inbox .unread .row-title a::after { content: none; } /* the count says it */
 @media (min-width: 641px) { .data .row-sub.class-contact.show-sm { display: none; } }
+/* Attempt review: short answer, matching, ordering and drag & drop, part by part. */
+.review-parts { width: 100%; margin: 6px 0 4px; border-collapse: separate; border-spacing: 0 6px; font-size: 14px; }
+.review-parts th { padding: 0 12px; text-align: left; font: 600 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.review-parts td { padding: 9px 12px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface); }
+.review-parts td:first-child { border-left: 1px solid var(--line); border-radius: 9px 0 0 9px; font-weight: 600; }
+.review-parts td:last-child { border-right: 1px solid var(--line); border-radius: 0 9px 9px 0; }
+.review-parts tr.is-correct td { border-color: #bfe5cf; background: #f1faf5; }
+.review-parts tr.is-picked-wrong td { border-color: #f3c6c0; background: #fdf3f1; }
+.review-parts tr.is-picked-wrong td:nth-child(2) { color: #b42318; }
+/* Question form: the fields each answer type uses. */
+.qtype-pick { display: flex; flex-wrap: wrap; }
+.option-move { display: inline-flex; gap: 2px; }
+.option-arrow { color: var(--text-3); font-weight: 700; }
+.option-row select.option-slot { min-height: 40px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); font: inherit; }
+.option-row [hidden] { display: none !important; }
+.qtype-note { margin-top: -6px; }
+.qtype-note code { padding: 1px 6px; border-radius: 5px; background: var(--bg); font-family: var(--mono); }

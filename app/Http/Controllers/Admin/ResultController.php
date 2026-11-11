@@ -74,7 +74,7 @@ class ResultController extends Controller
             'attempt' => $attempt,
             'quiz' => $attempt->quiz,
             'rows' => $questions->map(function ($question) use ($attempt) {
-                $chosen = array_map('intval', $attempt->answers[$question->id] ?? []);
+                $chosen = $attempt->answers[$question->id] ?? [];
 
                 return ['question' => $question, 'chosen' => $chosen, 'right' => $question->isAnsweredCorrectly($chosen)];
             }),

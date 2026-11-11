@@ -51,33 +51,61 @@
             @foreach ($questions as $i => $question)
                 @php
                     $multiple = $question->type === 'multiple';
+                    $hint = match ($question->type) {
+                        'single', 'true_false' => __('account.select_one'),
+                        'multiple' => __('account.select_many'),
+                        default => __('account.hint_'.$question->type),
+                    };
                 @endphp
-                <fieldset class="card question" id="q{{ $question->id }}" data-question="{{ $question->id }}" style="--i: {{ min($i, 6) }}">
+                <fieldset class="card question" id="q{{ $question->id }}" data-question="{{ $question->id }}" data-qtype="{{ $question->type }}" style="--i: {{ min($i, 6) }}">
                     <legend>
                         <span class="q-num">{{ $i + 1 }}</span>
-                        <span class="q-prompt">{!! nl2br(e($question->prompt)) !!}</span>
+                        @if ($question->type === 'dragdrop')
+                            {{-- The sentence, with a blank (a list to pick from, or a drop box) at each ___ --}}
+                            <span class="q-prompt q-cloze">
+                                @foreach ($question->promptPieces() as $n => $piece)
+                                    {!! nl2br(e($piece)) !!}
+                                    @if (! $loop->last)
+                                        <span class="q-blank" data-blank="{{ $n + 1 }}" data-part="{{ $n + 1 }}">
+                                            <select name="answers[{{ $question->id }}][{{ $n + 1 }}]" aria-label="{{ __('account.blank_n', ['n' => $n + 1]) }}">
+                                                <option value="">{{ $n + 1 }}…</option>
+                                                @foreach ($question->options as $word)
+                                                    <option value="{{ $word->id }}">{{ $word->text }}</option>
+                                                @endforeach
+                                            </select>
+                                        </span>
+                                    @endif
+                                @endforeach
+                            </span>
+                        @else
+                            <span class="q-prompt">{!! nl2br(e($question->prompt)) !!}</span>
+                        @endif
                     </legend>
                     @if ($question->image)
                         <img class="q-image" src="{{ media_url($question->image) }}" alt="">
                     @endif
                     <p class="q-hint">
                         <span>{{ __('account.question_of', ['n' => $i + 1, 'total' => $questions->count()]) }}</span>
-                        · {{ $multiple ? __('account.select_many') : __('account.select_one') }} @if ($question->points > 1)· {{ $question->points }} pts @endif
+                        · {{ $hint }} @if ($question->points > 1)· {{ $question->points }} pts @endif
                     </p>
-                    <div class="q-options">
-                        @foreach ($question->options as $option)
-                            <label class="q-option" data-option="{{ $option->id }}">
-                                <input type="{{ $multiple ? 'checkbox' : 'radio' }}" name="answers[{{ $question->id }}][]" value="{{ $option->id }}">
-                                <span class="q-mark" aria-hidden="true">{{ chr(65 + $loop->index) }}</span>
-                                <span>{{ $option->text }}</span>
-                            </label>
-                        @endforeach
-                    </div>
+                    @if ($question->isChoice())
+                        <div class="q-options">
+                            @foreach ($question->options as $option)
+                                <label class="q-option" data-option="{{ $option->id }}">
+                                    <input type="{{ $multiple ? 'checkbox' : 'radio' }}" name="answers[{{ $question->id }}][]" value="{{ $option->id }}">
+                                    <span class="q-mark" aria-hidden="true">{{ chr(65 + $loop->index) }}</span>
+                                    <span>{{ $option->text }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @else
+                        @include('learn._answer-input')
+                    @endif
                     @if ($quiz->isPractice())
                         <div class="q-check">
                             <button type="button" class="btn btn-outline btn-sm" data-check>{{ __('account.check_answer') }}</button>
                             <div class="q-feedback" data-feedback hidden
-                                 data-correct="{{ __('account.correct') }}" data-incorrect="{{ __('account.incorrect') }}" data-explain="{{ __('account.explanation') }}"></div>
+                                 data-correct="{{ __('account.correct') }}" data-incorrect="{{ __('account.incorrect') }}" data-explain="{{ __('account.explanation') }}" data-solution="{{ __('account.right_answer_is') }}"></div>
                         </div>
                     @endif
                 </fieldset>

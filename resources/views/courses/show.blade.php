@@ -1,6 +1,7 @@
 @extends('layouts.site')
 
 @section('title', $course->title)
+@section('body_class', 'page-course')
 @section('admin_edit', route('admin.courses.edit', $course))
 {{-- (string): a null second argument would make Blade open a block section that never closes. --}}
 @section('description', (string) $course->summary)
@@ -47,11 +48,14 @@
             </div>
 
             <aside class="price-card" id="buy">
-                @if (session('checkout_notice'))
-                    <div class="alert alert-info" role="status">{{ session('checkout_notice') }}</div>
+                @if ($course->image)
+                    <div class="price-cover"><img src="{{ $course->mediaUrl() }}" alt="{{ $course->title }}" fetchpriority="high"></div>
                 @endif
                 @if ($course->icon)
                     <img class="course-icon" src="{{ $course->mediaUrl('icon') }}" alt="" width="48" height="48">
+                @endif
+                @if (session('checkout_notice'))
+                    <div class="alert alert-info" role="status">{{ session('checkout_notice') }}</div>
                 @endif
                 @if ($course->isFree())
                     <span class="price price-free">{{ __('account.free') }}</span>
@@ -118,6 +122,29 @@
         </div>
     </section>
 
+    {{-- Phones: the price card is far down the page, so the price and the way in stay at the bottom edge. Kept here, above the "other courses" loop, which reuses $course. --}}
+    <div class="buy-bar" data-buy-bar>
+        <div class="buy-bar-price">
+            <small>{{ $course->title }}</small>
+            @if ($hasAccess)
+                <strong>{{ $enrollment?->expires_at ? __('account.enrolled_until', ['date' => $enrollment->expires_at->format('d/m/Y')]) : __('account.enrolled_lifetime') }}</strong>
+            @elseif ($course->formattedPrice())
+                <strong>{{ $course->formattedPrice() }}</strong>
+            @elseif ($course->price)
+                <strong>{{ trim($course->price_prefix.' '.$course->price.' '.$course->price_suffix) }}</strong>
+            @endif
+        </div>
+        @if ($hasAccess)
+            <a class="btn btn-primary" href="{{ route('learn.course', $course->slug) }}">{{ __('account.go_to_course') }}</a>
+        @elseif ($course->isFree())
+            <a class="btn btn-primary" href="{{ route('courses.enroll', $course->slug) }}">{{ __('account.enroll_free') }}</a>
+        @elseif ($canBuy)
+            <a class="btn btn-primary" href="#buy">{{ \App\Payments\OnlinePayment::enabled() ? __('account.buy_now') : __('account.contact_to_buy') }}</a>
+        @else
+            <a class="btn btn-primary" href="{{ $course->cta_url ? link_url($course->cta_url) : '#contact-form' }}">{{ $course->cta_label ?: __('site.contact_us') }}</a>
+        @endif
+    </div>
+
     @if ($outline->isNotEmpty())
         <section class="section">
             <div class="container narrow">
@@ -129,9 +156,6 @@
 
     <section @class(['section', 'section-flush-top' => $outline->isNotEmpty()])>
         <div class="container narrow">
-            @if ($course->image)
-                <img class="featured-image" src="{{ $course->mediaUrl() }}" alt="{{ $course->title }}">
-            @endif
             <h2>{{ __('site.about_course', ['title' => $course->title]) }}</h2>
             <div class="prose entry">{!! $course->body !!}</div>
         </div>

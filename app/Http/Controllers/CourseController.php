@@ -16,7 +16,7 @@ class CourseController extends Controller
     {
         return view('courses.index', [
             'page' => Page::findBySlug('courses'),
-            'courses' => Course::published()->get(),
+            'courses' => Course::published()->forCards()->get(),
         ]);
     }
 
@@ -58,7 +58,7 @@ class CourseController extends Controller
             'hasAccess' => $user?->canAccessCourse($course) ?? false,
             // Periods and prices always show; if online payment is not set up yet, checkout says so.
             'canBuy' => $course->isPurchasable(),
-            'others' => Course::published()->whereKeyNot($course->id)->get(),
+            'others' => Course::published()->forCards()->whereKeyNot($course->id)->get(),
         ]);
     }
 }

@@ -14,7 +14,7 @@ class HomeController extends Controller
     {
         return view('home', [
             'page' => Page::findBySlug('home') ?? new Page(['title' => config('app.name'), 'template' => 'home']),
-            'courses' => Course::published()->take(6)->get(),
+            'courses' => Course::published()->forCards()->take(6)->get(),
             'lessons' => Article::ofType('tutorial')->published()->take(3)->get(),
             'news' => Article::ofType('news')->published()->take(3)->get(),
             'testimonials' => Testimonial::published()->get(),

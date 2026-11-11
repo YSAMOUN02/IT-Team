@@ -5,12 +5,12 @@
 
 @php
     $rows = $questions->map(function ($question) use ($attempt) {
-        $chosen = array_map('intval', $attempt->answers[$question->id] ?? []);
+        $chosen = $attempt->answers[$question->id] ?? [];
 
         return ['question' => $question, 'chosen' => $chosen, 'right' => $question->isAnsweredCorrectly($chosen)];
     });
     $rightCount = $rows->where('right', true)->count();
-    $unanswered = $rows->filter(fn ($row) => ! $row['chosen'])->count();
+    $unanswered = $rows->filter(fn ($row) => ! $row['question']->hasAnswer($row['chosen']))->count();
     $wrongCount = $rows->count() - $rightCount - $unanswered;
     // Attempts saved before the 2026_11_01_000002 fix lost their real start time (it equals the submit time): no time shown.
     $seconds = $attempt->started_at && $attempt->submitted_at?->gt($attempt->started_at) ? (int) $attempt->started_at->diffInSeconds($attempt->submitted_at) : null;
@@ -91,13 +91,25 @@
                         <p class="q-head">
                             <span class="q-num">{{ $i + 1 }}</span>
                             <span class="q-prompt">{!! nl2br(e($question->prompt)) !!}</span>
-                            <span class="pill {{ $right ? 'pill-paid' : 'pill-failed' }}">{{ $right ? __('account.correct') : ($chosen ? __('account.incorrect') : __('account.unanswered')) }}</span>
+                            <span class="pill {{ $right ? 'pill-paid' : 'pill-failed' }}">{{ $right ? __('account.correct') : ($question->hasAnswer($chosen) ? __('account.incorrect') : __('account.unanswered')) }}</span>
                         </p>
                         @if ($question->image)
                             <img class="q-image" src="{{ media_url($question->image) }}" alt="">
                         @endif
-                        <div class="q-options">
-                            @foreach ($question->options as $option)
+                        @unless ($question->isChoice())
+                            {{-- Short answer, matching, ordering, drag & drop: part by part --}}
+                            <div class="review-parts">
+                                @foreach ($question->reviewRows($chosen) as $part)
+                                    <div @class(['review-part', 'is-right' => $part['right'], 'is-wrong' => ! $part['right']])>
+                                        <b>@if ($part['label'] !== null){{ match ($question->type) { 'ordering' => __('account.place_n', ['n' => $part['label']]), 'dragdrop' => __('account.blank_n', ['n' => $part['label']]), default => $part['label'] } }}@endif</b>
+                                        <span><small>{{ __('account.your_answer') }}</small>{{ $part['given'] ?? '—' }}</span>
+                                        <span><small>{{ __('account.correct_answer') }}</small>{{ $part['correct'] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endunless
+                        <div class="q-options" @unless ($question->isChoice()) hidden @endunless>
+                            @foreach ($question->isChoice() ? $question->options : [] as $option)
                                 <div @class(['q-option', 'is-right' => $option->is_correct, 'is-wrong' => ! $option->is_correct && in_array($option->id, $chosen)])>
                                     <span class="q-mark">{{ chr(65 + $loop->index) }}</span>
                                     <span>{{ $option->text }}</span>

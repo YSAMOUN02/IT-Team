@@ -141,11 +141,15 @@ class QuizController extends Controller
         $this->authorizeQuiz($request, $course, $quiz);
         abort_unless($quiz->isPractice() && (int) $question->quiz_id === (int) $quiz->id, 404);
 
-        $chosen = array_map('intval', (array) $request->input('chosen', []));
+        $question->load('options');
+        $answer = $question->normalizeAnswer($request->has('answer') ? $request->input('answer') : $request->input('chosen', []));
 
         return response()->json([
-            'correct' => $question->load('options')->isAnsweredCorrectly($chosen),
-            'correct_ids' => $question->correctOptionIds(),
+            'correct' => $question->isAnsweredCorrectly($answer),
+            'correct_ids' => $question->isChoice() ? $question->correctOptionIds() : [],
+            // The other types: right or wrong part by part, and the right answer in words.
+            'parts' => collect($question->reviewRows($answer))->mapWithKeys(fn ($row) => [$row['key'] => $row['right']]),
+            'solution' => $question->isChoice() ? null : $question->solutionText(),
             'explanation' => $question->explanation,
         ]);
     }

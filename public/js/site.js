@@ -107,6 +107,13 @@
         $$('[data-count]').forEach((el) => observer.observe(el));
     }
 
+    // Course page on phones: the bottom bar steps aside while the price card itself is on screen.
+    const buyBar = $('[data-buy-bar]');
+    const buyCard = $('#buy');
+    if (buyBar && buyCard && 'IntersectionObserver' in window) {
+        new IntersectionObserver(([entry]) => buyBar.classList.toggle('is-hidden', entry.isIntersecting), { threshold: 0.15 }).observe(buyCard);
+    }
+
     // Reading progress bar on lessons and articles
     const bar = $('[data-read-progress] span');
     if (bar) {

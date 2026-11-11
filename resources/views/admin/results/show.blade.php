@@ -3,7 +3,7 @@
 @php
     $student = $attempt->user;
     $rightCount = $rows->where('right', true)->count();
-    $unanswered = $rows->filter(fn ($row) => ! $row['chosen'])->count();
+    $unanswered = $rows->filter(fn ($row) => ! $row['question']->hasAnswer($row['chosen']))->count();
     $wrongCount = $rows->count() - $rightCount - $unanswered;
     // Attempts saved before the 2026_11_01_000002 fix lost their real start time (it equals the submit time).
     $seconds = $attempt->isSubmitted() && $attempt->submitted_at->gt($attempt->started_at) ? (int) $attempt->started_at->diffInSeconds($attempt->submitted_at) : null;
@@ -60,13 +60,29 @@
                             <div class="review-q-head">
                                 <span class="q-num">{{ $loop->iteration }}</span>
                                 <span class="q-prompt">{!! nl2br(e($question->prompt)) !!}</span>
-                                <span class="status {{ $right ? 'status-on' : ($chosen ? 'status-blocked' : 'status-off') }}">{{ $right ? 'Correct' : ($chosen ? 'Wrong' : 'Not answered') }}</span>
+                                @php($given = $question->hasAnswer($chosen))
+                                <span class="status {{ $right ? 'status-on' : ($given ? 'status-blocked' : 'status-off') }}">{{ $right ? 'Correct' : ($given ? 'Wrong' : 'Not answered') }}</span>
                             </div>
                             @if ($question->image)
                                 <img class="review-image" src="{{ media_url($question->image) }}" alt="">
                             @endif
-                            <ul class="review-opts">
-                                @foreach ($question->options as $option)
+                            @unless ($question->isChoice())
+                                {{-- Short answer, matching, ordering, drag & drop: part by part. --}}
+                                <table class="review-parts">
+                                    <thead><tr><th>{{ ['matching' => 'Item', 'ordering' => 'Place', 'dragdrop' => 'Blank'][$question->type] ?? '' }}</th><th>Student's answer</th><th>Right answer</th></tr></thead>
+                                    <tbody>
+                                    @foreach ($question->reviewRows($chosen) as $part)
+                                        <tr @class(['is-correct' => $part['right'], 'is-picked-wrong' => ! $part['right']])>
+                                            <td>{{ $part['label'] }}</td>
+                                            <td>{{ $part['given'] ?? '—' }}</td>
+                                            <td>{{ $part['correct'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            @endunless
+                            <ul class="review-opts" @unless ($question->isChoice()) hidden @endunless>
+                                @foreach ($question->isChoice() ? $question->options : [] as $option)
                                     @php($picked = in_array($option->id, $chosen))
                                     <li @class(['is-correct' => $option->is_correct, 'is-picked-wrong' => $picked && ! $option->is_correct])>
                                         <span class="q-mark">{{ chr(65 + $loop->index) }}</span>

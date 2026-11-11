@@ -386,4 +386,20 @@ return [
     'chat_write_first' => 'Write a message first.',
     'chat_email_footer' => 'You can also answer in the chat on our website:',
     'chat_email_link' => 'Open the chat',
+
+    // More question types
+    'hint_short' => 'Type your answer.',
+    'hint_matching' => 'Match each item on the left with one on the right.',
+    'hint_ordering' => 'Put the items in the right order: drag them, or use the arrows.',
+    'hint_dragdrop' => 'Drag each word into its blank, or tap a word and then a blank.',
+    'answer_placeholder' => 'Your answer',
+    'choose' => 'Choose…',
+    'move_up' => 'Move up',
+    'move_down' => 'Move down',
+    'drag_to_move' => 'Drag to move',
+    'words' => 'Words',
+    'blank_n' => 'Blank :n',
+    'clear_blank' => 'Tap to empty this blank',
+    'right_answer_is' => 'The right answer',
+    'place_n' => 'Place :n',
 ];
