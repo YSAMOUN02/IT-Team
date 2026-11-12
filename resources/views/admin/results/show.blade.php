@@ -62,13 +62,18 @@
                                 <span class="q-num">{{ $loop->iteration }}</span>
                                 <span class="q-prompt">{!! nl2br(e($question->prompt)) !!}</span>
                                 @php($given = $question->hasAnswer($chosen))
-                                <span class="status {{ $right ? 'status-on' : ($right === null ? 'status-sched' : ($given ? 'status-blocked' : 'status-off')) }}">{{ $right ? 'Correct' : ($right === null ? 'To mark' : ($given ? 'Wrong' : 'Not answered')) }}</span>
+                                @php($pct = $question->isMarkedByTeacher() && $given ? $attempt->markPercent($question) : null)
+                                @if ($pct !== null)
+                                    <span class="status {{ $pct === 100 ? 'status-on' : ($pct === 0 ? 'status-blocked' : 'status-sched') }}">{{ $pct }}% · {{ \App\Models\QuizQuestion::pointsText($attempt->pointsFor($question)) }} / {{ $question->points }} pt</span>
+                                @else
+                                    <span class="status {{ $right ? 'status-on' : ($right === null ? 'status-sched' : ($given ? 'status-blocked' : 'status-off')) }}">{{ $right ? 'Correct' : ($right === null ? 'To mark' : ($given ? 'Wrong' : 'Not answered')) }}</span>
+                                @endif
                             </div>
                             @if ($question->image)
                                 <img class="review-image" src="{{ media_url($question->image) }}" alt="">
                             @endif
                             @if ($question->isMarkedByTeacher())
-                                {{-- Short answer: the teacher reads it and marks it. --}}
+                                {{-- Short or long answer: the teacher reads it and gives 0-100% of the points. --}}
                                 <div class="mark-box">
                                     <div class="mark-answer"><small>Student's answer</small>{{ $given ? $chosen : '(no answer)' }}</div>
                                     @if ($question->explanation)
@@ -78,9 +83,15 @@
                                         <form method="post" action="{{ route('admin.results.mark', $attempt) }}" class="mark-actions">
                                             @csrf
                                             <input type="hidden" name="question_id" value="{{ $question->id }}">
-                                            <button class="btn btn-sm {{ $right === true ? 'btn-primary' : 'btn-ghost' }}" name="right" value="1">@include('admin.partials.icon', ['name' => 'check']) Right</button>
-                                            <button class="btn btn-sm {{ $right === false ? 'btn-danger' : 'btn-ghost' }}" name="right" value="0">Wrong</button>
-                                            @if ($right !== null)<span class="help">Marked. Click the other button to change it.</span>@endif
+                                            <span class="mark-label">Mark <small>{{ $question->points }} {{ $question->points === 1 ? 'point' : 'points' }}</small></span>
+                                            <div class="mark-scale" role="group" aria-label="Mark">
+                                                @foreach (\App\Models\QuizQuestion::MARK_STEPS as $step)
+                                                    <button @class(['mark-step', 'is-on' => $pct === $step]) name="percent" value="{{ $step }}" @if ($pct === $step) aria-pressed="true" @endif>
+                                                        <b>{{ $step }}%</b><small>{{ \App\Models\QuizQuestion::pointsText($question->points * $step / 100) }} pt</small>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                            @if ($pct !== null)<span class="help">Marked {{ $pct }}%. Click another mark to change it.</span>@endif
                                         </form>
                                     @endif
                                 </div>

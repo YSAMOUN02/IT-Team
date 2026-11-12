@@ -120,7 +120,7 @@
             <div class="card-head">
                 <div><h2>Questions</h2><p>{{ $quiz->questions->count() }} questions · {{ $quiz->questions->sum('points') }} points</p></div>
                 <div class="page-actions add-question-types">
-                    @foreach (['short' => 'Short answer', 'matching' => 'Matching', 'ordering' => 'Ordering', 'dragdrop' => 'Drag & drop'] as $newType => $newLabel)
+                    @foreach (['short' => 'Short answer', 'long' => 'Long answer', 'matching' => 'Matching', 'ordering' => 'Ordering', 'dragdrop' => 'Drag & drop'] as $newType => $newLabel)
                         <a class="btn btn-ghost btn-sm" href="{{ route('admin.quizzes.questions.create', [$quiz, 'type' => $newType]) }}">@include('admin.partials.icon', ['name' => 'plus']) {{ $newLabel }}</a>
                     @endforeach
                     <a class="btn btn-ghost btn-sm" href="{{ route('admin.quizzes.questions.create', [$quiz, 'type' => 'true_false']) }}">@include('admin.partials.icon', ['name' => 'plus']) True / False</a>

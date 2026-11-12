@@ -50,12 +50,12 @@
                         @include('admin.fields.textarea', ['name' => 'prompt', 'label' => 'Question', 'value' => $question->prompt, 'rows' => 3, 'required' => true])
                         <p class="help qtype-note" data-for="dragdrop">Write <code>___</code> (three underscores) where each blank goes, e.g. <code>Use ___ to add up a range, and ___ to count it.</code> The blanks are numbered 1, 2, 3… from the left.</p>
 
-                        <div class="alert alert-info qtype-note" data-for="short">
+                        <div class="alert alert-info qtype-note" data-for="short long">
                             @include('admin.partials.icon', ['name' => 'edit'])
-                            <div>Students type an answer of up to 255 characters. There is no answer key: you mark each answer <b>Right</b> or <b>Wrong</b> in <b>Exam results</b>, and the score updates then. Put a model answer in <b>Explanation</b> to help whoever marks.</div>
+                            <div>Students type an answer of up to <b data-for="short">255</b><b data-for="long">2,000</b> characters. There is no answer key: in <b>Exam results</b> you give each answer a mark from <b>0% to 100%</b> (steps of 10%), and its points follow (70% of 2 points = 1.4). Put a model answer in <b>Explanation</b> to help whoever marks.</div>
                         </div>
 
-                        <div class="field" data-answers="list" @if (in_array($type, ['true_false', 'short'], true)) hidden @endif>
+                        <div class="field" data-answers="list" @if (in_array($type, ['true_false', 'short', 'long'], true)) hidden @endif>
                             <span class="field-label"><span>
                                 @foreach ($kinds as $kind => [$title, $hint])
                                     <span data-for="{{ $kind }}">{{ $title }} <small class="muted">· {{ $hint }}</small></span>
@@ -131,7 +131,7 @@
     // Show the fields this type uses; number the placeholders ("Step 1", "Word 2"…).
     const sync = () => {
         const t = type();
-        document.querySelector('[data-answers="list"]').hidden = t === 'true_false' || t === 'short';
+        document.querySelector('[data-answers="list"]').hidden = ['true_false', 'short', 'long'].includes(t);
         document.querySelector('[data-answers="true_false"]').hidden = t !== 'true_false';
         document.querySelectorAll('[data-for]').forEach((el) => { el.hidden = !el.dataset.for.split(' ').includes(t); });
         rows.querySelectorAll('[data-text]').forEach((input, i) => {

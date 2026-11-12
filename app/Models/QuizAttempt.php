@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -22,6 +23,16 @@ class QuizAttempt extends Model
         'started_at' => 'datetime',
         'submitted_at' => 'datetime',
     ];
+
+    /** One decimal at most (a teacher can give part of the points): 4.0 comes back as 4, 1.4 as 1.4. */
+    protected function score(): Attribute
+    {
+        return Attribute::get(function ($value) {
+            $value = round((float) $value, 1);
+
+            return floor($value) === $value ? (int) $value : $value;
+        });
+    }
 
     public function quiz(): BelongsTo
     {
@@ -75,27 +86,51 @@ class QuizAttempt extends Model
         return $this->rescore();
     }
 
-    /** Right or wrong; for a short answer the teacher's mark, null while nobody has marked it (an empty one is wrong). */
-    public function isRight(QuizQuestion $question): ?bool
+    /**
+     * A written answer's mark in percent (0-100), null while nobody has marked it. An empty answer is 0.
+     * Marks saved as true / false (before marks went in steps of 10%) count as 100 / 0.
+     */
+    public function markPercent(QuizQuestion $question): ?int
     {
-        $answer = ($this->answers ?? [])[$question->id] ?? null;
-        if ($question->isMarkedByTeacher()) {
-            if (! $question->hasAnswer($answer)) {
-                return false;
-            }
-            $mark = ($this->marks ?? [])[$question->id] ?? null;
-
-            return $mark === null ? null : (bool) $mark;
+        if (! $question->hasAnswer(($this->answers ?? [])[$question->id] ?? null)) {
+            return 0;
         }
+        $mark = ($this->marks ?? [])[$question->id] ?? null;
 
-        return $question->isAnsweredCorrectly($answer);
+        return match (true) {
+            $mark === null => null,
+            is_bool($mark) => $mark ? 100 : 0,
+            default => max(0, min(100, (int) $mark)),
+        };
     }
 
-    /** A teacher marks one short answer right or wrong; the score and result follow. */
-    public function mark(QuizQuestion $question, bool $right): self
+    /** Points earned on one question: all or nothing, or a teacher's percent of the points for a written answer. */
+    public function pointsFor(QuizQuestion $question): float
+    {
+        if ($question->isMarkedByTeacher()) {
+            return round($question->points * ($this->markPercent($question) ?? 0) / 100, 1);
+        }
+
+        return $this->isRight($question) ? (float) $question->points : 0.0;
+    }
+
+    /** Right (full points) or not; for a written answer null while nobody has marked it. */
+    public function isRight(QuizQuestion $question): ?bool
+    {
+        if ($question->isMarkedByTeacher()) {
+            $percent = $this->markPercent($question);
+
+            return $percent === null ? null : $percent === 100;
+        }
+
+        return $question->isAnsweredCorrectly(($this->answers ?? [])[$question->id] ?? null);
+    }
+
+    /** A teacher gives one written answer 0-100% (steps of 10) of its points; the score and result follow. */
+    public function mark(QuizQuestion $question, int $percent): self
     {
         $marks = $this->marks ?? [];
-        $marks[$question->id] = $right;
+        $marks[$question->id] = max(0, min(100, $percent));
         $this->marks = $marks;
 
         return $this->rescore();
@@ -104,16 +139,17 @@ class QuizAttempt extends Model
     /** Score, percent and result from the answers and marks. Not passed while anything waits to be marked. */
     public function rescore(): self
     {
-        $score = 0;
+        $score = 0.0;
         $max = 0;
         $waiting = false;
         foreach ($this->orderedQuestions() as $question) {
             $max += $question->points;
             $right = $this->isRight($question);
             $waiting = $waiting || $right === null;
-            $score += $right ? $question->points : 0;
+            $score += $this->pointsFor($question);
         }
-        $percent = $max ? (int) floor($score * 100 / $max) : 0;
+        $score = round($score, 1);
+        $percent = $max ? (int) floor(round($score * 100 / $max, 6)) : 0;
 
         $this->fill([
             'score' => $score,

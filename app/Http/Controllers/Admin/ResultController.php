@@ -86,22 +86,22 @@ class ResultController extends Controller
         ]);
     }
 
-    /** A teacher marks one short answer right or wrong; the score, the result and the course completion follow. */
+    /** A teacher gives one written answer 0-100% of its points; the score, the result and the course completion follow. */
     public function mark(Request $request, QuizAttempt $attempt)
     {
-        $data = $request->validate(['question_id' => ['required', 'integer'], 'right' => ['required', 'boolean']]);
+        $data = $request->validate(['question_id' => ['required', 'integer'], 'percent' => ['required', 'integer', 'in:'.implode(',', \App\Models\QuizQuestion::MARK_STEPS)]]);
         abort_unless($attempt->isSubmitted(), 404);
         $question = $attempt->orderedQuestions()->first(fn ($q) => (int) $q->id === (int) $data['question_id']);
         abort_unless($question && $question->isMarkedByTeacher(), 404);
 
-        $attempt->load(['quiz.course', 'user'])->mark($question, (bool) $data['right']);
+        $attempt->load(['quiz.course', 'user'])->mark($question, (int) $data['percent']);
         if ($attempt->passed && $attempt->quiz->course) {
             CourseProgress::for($attempt->user, $attempt->quiz->course)->recordCompletion();
         }
 
         $left = $attempt->needs_marking ? ' Still to mark in this test: '.$attempt->orderedQuestions()->filter(fn ($q) => $attempt->isRight($q) === null)->count().'.' : ' All marked: '.$attempt->percent.'%, '.($attempt->passed ? 'passed' : 'not passed').'.';
 
-        return redirect()->to(route('admin.results.show', $attempt).'#q'.$question->id)->with('status', 'Marked '.($data['right'] ? 'right' : 'wrong').'.'.$left);
+        return redirect()->to(route('admin.results.show', $attempt).'#q'.$question->id)->with('status', 'Marked '.(int) $data['percent'].'% ('.\App\Models\QuizQuestion::pointsText($attempt->pointsFor($question)).' of '.$question->points.' points).'.$left);
     }
 
     /** Admin > Courses > a course > Results: the whole class on one page, one column per test. */

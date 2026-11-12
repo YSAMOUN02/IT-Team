@@ -1027,3 +1027,16 @@ a.kpi:hover { border-color: #cfd0f5; }
 .mark-model { background: var(--bg); color: var(--text-2); }
 .mark-answer small, .mark-model small { display: block; margin-bottom: 4px; font: 600 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
 .mark-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Marking a written answer: one line of marks, 0% to 100% */
+.mark-actions { align-items: flex-start; flex-direction: column; }
+.mark-label { font-weight: 600; font-size: 13px; }
+.mark-label small { color: var(--text-3); font-weight: 500; margin-left: 4px; }
+.mark-scale { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; width: 100%; }
+.mark-step { display: grid; gap: 1px; padding: 7px 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; text-align: center; transition: .15s; }
+.mark-step b { font-size: 13px; }
+.mark-step small { font: 500 10.5px var(--mono); color: var(--text-3); }
+.mark-step:hover { border-color: var(--accent-2); }
+.mark-step.is-on { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+.mark-step.is-on small { color: rgba(255, 255, 255, .85); }
+@media (max-width: 640px) { .mark-scale { grid-template-columns: repeat(6, minmax(0, 1fr)); } }

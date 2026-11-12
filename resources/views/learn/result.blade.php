@@ -94,17 +94,23 @@
                     </div>
                 </div>
                 @foreach ($rows as $i => ['question' => $question, 'chosen' => $chosen, 'right' => $right])
-                    <div @class(['card', 'question', 'review', 'is-right' => $right, 'is-wrong' => $right === false, 'is-waiting' => $right === null]) data-review="{{ $right ? 'right' : ($right === null ? 'waiting' : 'wrong') }}">
+                    @php($partial = $question->isMarkedByTeacher() && $question->hasAnswer($chosen) && in_array($attempt->markPercent($question), range(10, 90, 10), true))
+                    <div @class(['card', 'question', 'review', 'is-right' => $right, 'is-wrong' => $right === false && ! $partial, 'is-partial' => $partial, 'is-waiting' => $right === null]) data-review="{{ $right ? 'right' : ($right === null ? 'waiting' : 'wrong') }}">
                         <p class="q-head">
                             <span class="q-num">{{ $i + 1 }}</span>
                             <span class="q-prompt">{!! nl2br(e($question->prompt)) !!}</span>
-                            <span class="pill {{ $right ? 'pill-paid' : ($right === null ? 'pill-pending' : 'pill-failed') }}">{{ $right ? __('account.correct') : ($right === null ? __('account.waiting_mark') : ($question->hasAnswer($chosen) ? __('account.incorrect') : __('account.unanswered'))) }}</span>
+                            @php($pct = $question->isMarkedByTeacher() && $question->hasAnswer($chosen) ? $attempt->markPercent($question) : null)
+                            @if ($pct !== null)
+                                <span class="pill {{ $pct === 100 ? 'pill-paid' : ($pct === 0 ? 'pill-failed' : 'pill-pending') }}">{{ __('account.marked_points', ['points' => \App\Models\QuizQuestion::pointsText($attempt->pointsFor($question)), 'max' => $question->points, 'percent' => $pct]) }}</span>
+                            @else
+                                <span class="pill {{ $right ? 'pill-paid' : ($right === null ? 'pill-pending' : 'pill-failed') }}">{{ $right ? __('account.correct') : ($right === null ? __('account.waiting_mark') : ($question->hasAnswer($chosen) ? __('account.incorrect') : __('account.unanswered'))) }}</span>
+                            @endif
                         </p>
                         @if ($question->image)
                             <img class="q-image" src="{{ media_url($question->image) }}" alt="">
                         @endif
                         @if ($question->isMarkedByTeacher())
-                            <div @class(['review-part', 'review-written', 'is-right' => $right, 'is-wrong' => $right === false])>
+                            <div @class(['review-part', 'review-written', 'is-right' => $right, 'is-wrong' => $right === false && ! $pct, 'is-partial' => $pct > 0 && $pct < 100])>
                                 <span><small>{{ __('account.your_answer') }}</small>{{ $question->hasAnswer($chosen) ? $chosen : '—' }}</span>
                             </div>
                         @endif

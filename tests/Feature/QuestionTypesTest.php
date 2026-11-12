@@ -118,13 +118,13 @@ class QuestionTypesTest extends TestCase
         // The teacher marks it right: 4 out of 4, passed.
         $this->actingAs($this->admin)->get(route('admin.results.index'))->assertSee('To mark');
         $this->get(route('admin.results.index', ['result' => 'to_mark']))->assertSee(e(route('admin.results.show', $attempt)), false);
-        $this->get(route('admin.results.show', $attempt))->assertOk()->assertSee('To summarise data.')->assertSee('To summarise a large table quickly.')->assertSee('name="right" value="1"', false);
-        $this->post(route('admin.results.mark', $attempt), ['question_id' => $q['short']->id, 'right' => 1])
-            ->assertRedirect(route('admin.results.show', $attempt).'#q'.$q['short']->id)->assertSessionHas('status', 'Marked right. All marked: 100%, passed.');
+        $this->get(route('admin.results.show', $attempt))->assertOk()->assertSee('To summarise data.')->assertSee('To summarise a large table quickly.')->assertSee('name="percent" value="100"', false);
+        $this->post(route('admin.results.mark', $attempt), ['question_id' => $q['short']->id, 'percent' => 100])
+            ->assertRedirect(route('admin.results.show', $attempt).'#q'.$q['short']->id)->assertSessionHas('status', 'Marked 100% (1 of 1 points). All marked: 100%, passed.');
         $attempt->refresh();
         $this->assertSame([4, true, false], [$attempt->score, $attempt->passed, $attempt->needs_marking]);
         // Only short answers are marked by hand.
-        $this->post(route('admin.results.mark', $attempt), ['question_id' => $q['matching']->id, 'right' => 0])->assertNotFound();
+        $this->post(route('admin.results.mark', $attempt), ['question_id' => $q['matching']->id, 'percent' => 0])->assertNotFound();
         $this->actingAs($student)->get("$base/attempts/{$attempt->id}/result")->assertDontSee(__('account.result_waiting'));
 
         // All wrong: shown part by part, the right answer beside the student's.
@@ -136,7 +136,7 @@ class QuestionTypesTest extends TestCase
             $q['ordering']->id => array_reverse($q['ordering']->options->pluck('id')->all()),
             $q['dragdrop']->id => [1 => $id('dragdrop', 'VLOOKUP'), 2 => $id('dragdrop', 'COUNT')],
         ]]);
-        $this->actingAs($this->admin)->post(route('admin.results.mark', $second), ['question_id' => $q['short']->id, 'right' => 0]);
+        $this->actingAs($this->admin)->post(route('admin.results.mark', $second), ['question_id' => $q['short']->id, 'percent' => 0]);
         $second->refresh();
         $this->assertSame([0, false, false], [$second->score, $second->passed, $second->needs_marking]);
         $page = $this->actingAs($student)->get("$base/attempts/{$second->id}/result")->assertOk();
@@ -211,6 +211,51 @@ class QuestionTypesTest extends TestCase
         $empty = $this->quiz->attempts()->latest('id')->first();
         $this->post("$base/attempts/{$empty->id}", ['answers' => [$question->id => '   ']]);
         $this->assertSame([false, 0], [$empty->fresh()->needs_marking, $empty->fresh()->score]);
+    }
+
+    public function test_a_teacher_gives_part_of_the_points_to_a_long_answer(): void
+    {
+        $this->actingAs($this->admin)->post(route('admin.quizzes.questions.store', $this->quiz), ['type' => 'long', 'prompt' => 'Explain how you would clean this table', 'points' => 2, 'options' => [['text' => 'ignored']]]);
+        $this->post(route('admin.quizzes.questions.store', $this->quiz), ['type' => 'true_false', 'prompt' => 'Ctrl + Z undoes', 'points' => 1, 'tf_answer' => 'true']);
+        [$long, $tf] = $this->quiz->questions()->orderBy('id')->get()->all();
+        $this->assertSame(0, $long->options()->count());
+        $this->quiz->update(['pass_percent' => 70]);
+
+        $student = User::factory()->create();
+        Enrollment::grant($student, $this->course, null, 'manual');
+        $base = "/learn/{$this->course->slug}/quizzes/{$this->quiz->slug}";
+        $this->actingAs($student)->post("$base/start");
+        $attempt = $this->quiz->attempts()->sole();
+        $this->get("$base/attempts/{$attempt->id}")->assertSee('maxlength="2000"', false)->assertSee(__('account.hint_long'));
+        $this->post("$base/attempts/{$attempt->id}", ['answers' => [
+            $long->id => str_repeat('a', 2100),
+            $tf->id => [$tf->options()->where('is_correct', true)->value('id')],
+        ]]);
+        $attempt->refresh();
+        $this->assertSame([2000, 1, true], [mb_strlen($attempt->answers[$long->id]), $attempt->score, $attempt->needs_marking]);
+
+        // The mark line: 0% to 100%, points shown beside each step.
+        $this->actingAs($this->admin)->get(route('admin.results.show', $attempt))->assertOk()
+            ->assertSee('name="percent" value="70"', false)->assertSee('1.4 pt')->assertDontSee('name="right"', false);
+        $this->post(route('admin.results.mark', $attempt), ['question_id' => $long->id, 'percent' => 35])->assertSessionHasErrors('percent');
+
+        // 70% of 2 points = 1.4; with the true/false point: 2.4 of 3 = 80%, passed (pass mark 70%).
+        $this->post(route('admin.results.mark', $attempt), ['question_id' => $long->id, 'percent' => 70])
+            ->assertSessionHas('status', 'Marked 70% (1.4 of 2 points). All marked: 80%, passed.');
+        $attempt->refresh();
+        $this->assertSame([2.4, 80, true, false], [$attempt->score, $attempt->percent, $attempt->passed, $attempt->needs_marking]);
+        $this->get(route('admin.results.show', $attempt))->assertSee('70% · 1.4 / 2 pt');
+        $this->actingAs($student)->get("$base/attempts/{$attempt->id}/result")->assertOk()
+            ->assertSee(__('account.marked_points', ['points' => '1.4', 'max' => 2, 'percent' => 70]))->assertSee('is-partial', false);
+
+        // Lower the mark: 30% = 0.6, 1.6 of 3 = 53%, not passed.
+        $this->actingAs($this->admin)->post(route('admin.results.mark', $attempt), ['question_id' => $long->id, 'percent' => 30]);
+        $attempt->refresh();
+        $this->assertSame([1.6, 53, false], [$attempt->score, $attempt->percent, $attempt->passed]);
+
+        // A mark saved as true / false before the 10% steps still counts as 100% / 0%.
+        $attempt->forceFill(['marks' => [$long->id => true]])->save();
+        $this->assertSame([100, 3], [$attempt->markPercent($long), $attempt->rescore()->score]);
     }
 
     public function test_copying_a_course_keeps_pairs_and_blanks(): void

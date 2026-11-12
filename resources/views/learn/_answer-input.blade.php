@@ -5,10 +5,11 @@
 @endphp
 @switch ($question->type)
     @case('short')
-        <div class="q-short" data-part="text">
-            <textarea name="answers[{{ $qid }}]" maxlength="255" rows="3" autocomplete="off" data-chars-template="{{ __('account.chars_left', ['count' => ':count']) }}"
+    @case('long')
+        <div @class(['q-short', 'q-long' => $question->type === 'long']) data-part="text">
+            <textarea name="answers[{{ $qid }}]" maxlength="{{ $question->maxChars() }}" rows="{{ $question->type === 'long' ? 8 : 3 }}" autocomplete="off" data-chars-template="{{ __('account.chars_left', ['count' => ':count']) }}"
                       placeholder="{{ __('account.answer_placeholder') }}" aria-label="{{ __('account.answer_placeholder') }}"></textarea>
-            <small class="q-short-count" data-chars aria-live="polite">{{ __('account.chars_left', ['count' => 255]) }}</small>
+            <small class="q-short-count" data-chars aria-live="polite">{{ __('account.chars_left', ['count' => $question->maxChars()]) }}</small>
         </div>
         @break
 

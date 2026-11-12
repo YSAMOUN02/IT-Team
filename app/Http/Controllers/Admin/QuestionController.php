@@ -126,7 +126,7 @@ class QuestionController extends Controller
             ];
         }
 
-        if ($data['type'] === 'short') {
+        if (array_key_exists($data['type'], QuizQuestion::WRITTEN_TYPES)) {
             return []; // no answer key: a teacher marks each answer in Exam results
         }
         if (! in_array($data['type'], QuizQuestion::CHOICE_TYPES, true)) {

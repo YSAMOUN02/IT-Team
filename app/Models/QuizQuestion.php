@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * A question and its answers. How an answer is kept depends on the type:
  *  single, multiple, true_false - list of chosen option ids
- *  short    - the text typed (at most 255 characters); a teacher marks it right or wrong (QuizAttempt::mark)
+ *  short    - the text typed (at most 255 characters); a teacher gives it 0% to 100% of the points (QuizAttempt::mark)
+ *  long     - the same, at most 2,000 characters
  *  matching - [left option id => option id whose right side was picked]; option text = left, match_text = right
  *  ordering - option ids in the order the student put them; the options' position is the right order
  *  dragdrop - [blank number => option id]; the prompt has "___" for each blank, an option's slot is its blank
- * Every type is all-or-nothing.
+ * Every other type is all-or-nothing.
  */
 class QuizQuestion extends Model
 {
@@ -22,12 +23,19 @@ class QuizQuestion extends Model
         'multiple' => 'Several correct answers',
         'true_false' => 'True / False',
         'short' => 'Short answer',
+        'long' => 'Long answer',
         'matching' => 'Matching',
         'ordering' => 'Ordering',
         'dragdrop' => 'Drag & drop',
     ];
 
     public const CHOICE_TYPES = ['single', 'multiple', 'true_false'];
+
+    /** Written answers: a teacher reads and marks them. Value = the most characters a student may type. */
+    public const WRITTEN_TYPES = ['short' => 255, 'long' => 2000];
+
+    /** The marks a teacher can give a written answer, in percent of the question's points. */
+    public const MARK_STEPS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
     /** Three or more underscores in a drag & drop prompt mark a blank. */
     public const BLANK = '/_{3,}/u';
@@ -48,10 +56,21 @@ class QuizQuestion extends Model
         return $this->hasMany(QuizOption::class)->orderBy('position')->orderBy('id');
     }
 
-    /** Short answers have no answer key: a teacher reads and marks them. */
+    /** Short and long answers have no answer key: a teacher reads and marks them. */
     public function isMarkedByTeacher(): bool
     {
-        return $this->type === 'short';
+        return array_key_exists((string) $this->type, self::WRITTEN_TYPES);
+    }
+
+    public function maxChars(): int
+    {
+        return self::WRITTEN_TYPES[$this->type] ?? 255;
+    }
+
+    /** 1.4 → "1.4", 2.0 → "2". */
+    public static function pointsText(float $points): string
+    {
+        return rtrim(rtrim(number_format($points, 1, '.', ''), '0'), '.');
     }
 
     public function isChoice(): bool
@@ -93,7 +112,8 @@ class QuizQuestion extends Model
 
         switch ($this->type) {
             case 'short':
-                return mb_substr(trim((string) (is_array($raw) ? ($raw['text'] ?? '') : $raw)), 0, 255);
+            case 'long':
+                return mb_substr(trim((string) (is_array($raw) ? ($raw['text'] ?? '') : $raw)), 0, $this->maxChars());
             case 'matching':
                 $out = [];
                 foreach ((array) $raw as $left => $right) {
@@ -195,7 +215,7 @@ class QuizQuestion extends Model
     public function solutionText(): string
     {
         return match ($this->type) {
-            'short' => '',
+            'short', 'long' => '',
             'matching' => $this->options->map(fn ($o) => $o->text.' → '.$o->match_text)->implode(' · '),
             'ordering' => $this->options->pluck('text')->implode(' → '),
             'dragdrop' => collect($this->reviewRows([]))->pluck('correct')->implode(' · '),

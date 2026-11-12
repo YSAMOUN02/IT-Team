@@ -406,4 +406,6 @@ return [
     'waiting_mark' => 'Waiting for the teacher',
     'teacher_marks' => 'Your teacher marks this answer after you submit the test.',
     'chars_left' => ':count characters left',
+    'hint_long' => 'Write your answer (up to 2,000 characters). Your teacher marks it.',
+    'marked_points' => ':points / :max pts (:percent%)',
 ];

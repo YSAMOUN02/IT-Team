@@ -21,7 +21,7 @@
     // Answered: a choice ticked, text typed, every list picked, every blank filled, or the order touched.
     const isAnswered = (q) => {
         switch (type(q)) {
-            case 'short': return q.querySelector('.q-short textarea').value.trim() !== '';
+            case 'short': case 'long': return q.querySelector('.q-short textarea').value.trim() !== '';
             case 'matching':
             case 'dragdrop': return Array.from(q.querySelectorAll('select')).every((s) => s.value !== '');
             case 'ordering': return q.dataset.touched === '1';
@@ -32,7 +32,7 @@
     // The answer as the server wants it (also what is kept across a reload).
     const answerOf = (q) => {
         switch (type(q)) {
-            case 'short': return q.querySelector('.q-short textarea').value;
+            case 'short': case 'long': return q.querySelector('.q-short textarea').value;
             case 'matching':
             case 'dragdrop': {
                 const out = {};
@@ -58,7 +58,7 @@
             if (!q || saved == null) return;
             const value = Array.isArray(saved) ? saved : saved.a; // older pages kept a plain list
             switch (type(q)) {
-                case 'short': q.querySelector('.q-short textarea').value = value || ''; break;
+                case 'short': case 'long': q.querySelector('.q-short textarea').value = value || ''; break;
                 case 'matching':
                 case 'dragdrop':
                     Object.entries(value || {}).forEach(([key, v]) => {
@@ -256,7 +256,7 @@
         }
     };
     form.addEventListener('change', onEdit);
-    // Short answers: how many of the 255 characters are left.
+    // Short and long answers: how many characters are left.
     const countChars = (box) => {
         const area = box.querySelector('textarea');
         const left = area.maxLength - area.value.length;
