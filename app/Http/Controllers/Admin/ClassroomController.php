@@ -157,6 +157,15 @@ class ClassroomController extends Controller
         return back()->with('status', "{$user->name} left the class. Their course access is unchanged.");
     }
 
+    /** Excel progress report of the class: summary, every lesson, every test and every try (one course with ?course=). */
+    public function report(Request $request, Classroom $classroom)
+    {
+        $course = $request->filled('course') ? $classroom->courses()->whereKey($request->integer('course'))->firstOrFail() : null;
+        $name = (str($classroom->name)->slug()->value() ?: 'class-'.$classroom->id).($course ? '-'.$course->slug : '').'-progress-'.now()->format('Y-m-d').'.xlsx';
+
+        return \App\Support\ProgressReport::forClass($classroom, $course)->workbook()->download($name);
+    }
+
     /** The table on screen (overview, or one course with ?course=) as a CSV file for Excel, with a BOM for Khmer names. */
     public function export(Request $request, Classroom $classroom)
     {

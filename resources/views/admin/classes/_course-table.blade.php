@@ -24,6 +24,7 @@
                         <span class="avatar" aria-hidden="true">{{ $initials($student->name) }}</span>
                         <div>
                             <a href="{{ route('admin.students.show', $student) }}">{{ $student->name }}</a>
+                            <a class="row-report" href="{{ route('admin.students.report', $student) }}" title="Download {{ $student->name }}'s progress report (Excel)" aria-label="Progress report of {{ $student->name }}">@include('admin.partials.icon', ['name' => 'upload'])</a>
                             @if ($student->isDisabled())<span class="status status-blocked">Account off</span>@endif
                             <span class="row-sub">{{ $student->phone ?: $student->email }}</span>
                             @if ($row['reason'])

@@ -104,6 +104,15 @@ class StudentController extends Controller
         ]);
     }
 
+    /** Excel progress report of one student: every course they have, lesson by lesson and test by test. */
+    public function report(User $user)
+    {
+        abort_if($user->isAdmin(), 404);
+        $name = (str($user->name)->slug()->value() ?: 'student-'.$user->id).'-progress-'.now()->format('Y-m-d').'.xlsx';
+
+        return \App\Support\ProgressReport::forStudent($user)->workbook()->download($name);
+    }
+
     public function grant(Request $request, User $user)
     {
         abort_if($user->isAdmin(), 404);

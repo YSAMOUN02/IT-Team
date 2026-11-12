@@ -223,6 +223,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('chats/{user}/new', [Admin\ChatController::class, 'poll'])->middleware('throttle:chat-poll')->name('chats.poll');
 
         Route::get('classes/{classroom}/students.csv', [Admin\ClassroomController::class, 'export'])->name('classes.export');
+        Route::get('classes/{classroom}/report.xlsx', [Admin\ClassroomController::class, 'report'])->name('classes.report');
+        Route::get('students/{user}/report.xlsx', [Admin\StudentController::class, 'report'])->name('students.report');
         Route::post('classes/{classroom}/students', [Admin\ClassroomController::class, 'addStudents'])->name('classes.students.store');
         Route::delete('classes/{classroom}/students/{user}', [Admin\ClassroomController::class, 'removeStudent'])->name('classes.students.destroy');
         Route::post('students/{user}/classes', [Admin\ClassroomController::class, 'addToClass'])->name('students.classes.store');

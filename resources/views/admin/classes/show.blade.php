@@ -26,6 +26,7 @@
     <span class="status {{ $statusTone }}">{{ \App\Models\Classroom::STATUSES[$classroom->status()] }}</span>
     @unless ($empty)
         <a class="btn btn-ghost" href="{{ route('admin.classes.export', array_filter([$classroom, 'course' => $several ? $course?->id : null])) }}">@include('admin.partials.icon', ['name' => 'upload']) Download Excel</a>
+        <a class="btn btn-ghost" href="{{ route('admin.classes.report', array_filter([$classroom, 'course' => $several ? $course?->id : null])) }}" title="Excel file: summary, every lesson, every test and every try">@include('admin.partials.icon', ['name' => 'upload']) Progress report</a>
     @endunless
     <a class="btn btn-ghost" href="{{ route('admin.classes.edit', $classroom) }}">@include('admin.partials.icon', ['name' => 'edit']) Edit</a>
 @endsection

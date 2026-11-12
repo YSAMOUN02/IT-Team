@@ -7,6 +7,7 @@
     <span aria-hidden="true">/</span><span>Student</span>
 @endsection
 @section('actions')
+    <a class="btn btn-ghost" href="{{ route('admin.students.report', $student) }}" title="Excel file: every course, lesson by lesson and test by test">@include('admin.partials.icon', ['name' => 'upload']) Progress report</a>
     <a class="btn btn-ghost" href="{{ route('admin.chats.show', $student) }}">@include('admin.partials.icon', ['name' => 'chat']) Chat</a>
     <a class="btn btn-ghost" href="{{ route('admin.chats.show', [$student, 'via' => 'email']) }}">@include('admin.partials.icon', ['name' => 'mail']) Email</a>
     <form method="post" action="{{ route('admin.students.update', $student) }}"

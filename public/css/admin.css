@@ -1040,3 +1040,8 @@ a.kpi:hover { border-color: #cfd0f5; }
 .mark-step.is-on { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
 .mark-step.is-on small { color: rgba(255, 255, 255, .85); }
 @media (max-width: 640px) { .mark-scale { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+/* Class tables: a small download link for one student's progress report */
+.row-report { display: inline-flex; vertical-align: middle; margin-left: 4px; color: var(--text-3); }
+.row-report:hover { color: var(--accent-2); }
+.row-report svg { width: 14px; height: 14px; }
