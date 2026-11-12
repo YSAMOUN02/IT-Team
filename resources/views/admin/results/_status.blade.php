@@ -5,6 +5,8 @@
     @else
         <span class="status status-sched">In progress</span>
     @endif
+@elseif ($attempt->needs_marking)
+    <span class="status status-sched">To mark</span>
 @elseif ($attempt->passed)
     <span class="status status-on">Passed</span>
 @else

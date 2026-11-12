@@ -22,7 +22,7 @@
             ['Orders', route('admin.orders.index'), request()->routeIs('admin.orders.*'), 'courses', $navCounts['orders_review'] ? ['badge', $navCounts['orders_review']] : ['count', $navCounts['orders_paid']]],
             ['Students', route('admin.students.index'), request()->routeIs('admin.students.*'), 'users', ['count', $navCounts['students']]],
             ['Classes', route('admin.classes.index'), request()->routeIs('admin.classes.*'), 'grid', ['count', $navCounts['classes']]],
-            ['Exam results', route('admin.results.index'), request()->routeIs('admin.results.*'), 'check', null],
+            ['Exam results', route('admin.results.index'), request()->routeIs('admin.results.*'), 'check', ['badge', $navCounts['to_mark']]],
             ['Re-exam requests', route('admin.retake-requests.index'), request()->routeIs('admin.retake-requests.*'), 'clock', ['badge', $navCounts['retakes']]],
         ]],
         ['D', 'Showcase', [

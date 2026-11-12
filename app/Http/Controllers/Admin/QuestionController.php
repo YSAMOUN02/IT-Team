@@ -126,6 +126,9 @@ class QuestionController extends Controller
             ];
         }
 
+        if ($data['type'] === 'short') {
+            return []; // no answer key: a teacher marks each answer in Exam results
+        }
         if (! in_array($data['type'], QuizQuestion::CHOICE_TYPES, true)) {
             return $this->otherOptionsFrom($data);
         }
@@ -152,7 +155,7 @@ class QuestionController extends Controller
 
         return $options;
     }
-/** Short answer, matching, ordering and drag & drop: their rows, checked for what each type needs. */
+    /** Matching, ordering and drag & drop: their rows, checked for what each type needs. */
     private function otherOptionsFrom(array $data): array
     {
         $options = [];
@@ -176,7 +179,6 @@ class QuestionController extends Controller
         }
 
         $error = match ($data['type']) {
-            'short' => $options === [] ? 'Add at least one accepted answer.' : null,
             'matching' => $halfPair ? 'Fill in both sides of every pair.' : (count($options) < 2 ? 'Add at least two pairs.' : null),
             'ordering' => count($options) < 2 ? 'Add at least two items.' : null,
             'dragdrop' => $this->dragDropError($data['prompt'], $options),

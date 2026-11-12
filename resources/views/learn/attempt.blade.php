@@ -101,7 +101,9 @@
                     @else
                         @include('learn._answer-input')
                     @endif
-                    @if ($quiz->isPractice())
+                    @if ($quiz->isPractice() && $question->isMarkedByTeacher())
+                        <p class="q-teacher-note">{{ __('account.teacher_marks') }}</p>
+                    @elseif ($quiz->isPractice())
                         <div class="q-check">
                             <button type="button" class="btn btn-outline btn-sm" data-check>{{ __('account.check_answer') }}</button>
                             <div class="q-feedback" data-feedback hidden

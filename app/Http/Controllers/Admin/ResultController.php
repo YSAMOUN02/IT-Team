@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 /** Admin > Exam results: every test students took, and each attempt question by question. */
 class ResultController extends Controller
 {
-    public const RESULTS = ['passed' => 'Passed', 'failed' => 'Not passed', 'unfinished' => 'Not submitted'];
+    public const RESULTS = ['to_mark' => 'To mark', 'passed' => 'Passed', 'failed' => 'Not passed', 'unfinished' => 'Not submitted'];
 
     /** Where each student stands in a course (Admin > Courses > Results). */
     public const COURSE_STATUSES = [
@@ -76,13 +76,32 @@ class ResultController extends Controller
             'rows' => $questions->map(function ($question) use ($attempt) {
                 $chosen = $attempt->answers[$question->id] ?? [];
 
-                return ['question' => $question, 'chosen' => $chosen, 'right' => $question->isAnsweredCorrectly($chosen)];
+                // right: true / false, or null for a short answer nobody has marked yet
+                return ['question' => $question, 'chosen' => $chosen, 'right' => $attempt->isRight($question)];
             }),
             'others' => QuizAttempt::where('user_id', $attempt->user_id)->where('quiz_id', $attempt->quiz_id)
                 ->orderBy('started_at')->orderBy('id')->get(),
             'attemptsLeft' => $attempt->quiz->attemptsLeft($attempt->user),
             'retakes' => RetakeRequest::where('user_id', $attempt->user_id)->where('quiz_id', $attempt->quiz_id)->latest()->latest('id')->get(),
         ]);
+    }
+
+    /** A teacher marks one short answer right or wrong; the score, the result and the course completion follow. */
+    public function mark(Request $request, QuizAttempt $attempt)
+    {
+        $data = $request->validate(['question_id' => ['required', 'integer'], 'right' => ['required', 'boolean']]);
+        abort_unless($attempt->isSubmitted(), 404);
+        $question = $attempt->orderedQuestions()->first(fn ($q) => (int) $q->id === (int) $data['question_id']);
+        abort_unless($question && $question->isMarkedByTeacher(), 404);
+
+        $attempt->load(['quiz.course', 'user'])->mark($question, (bool) $data['right']);
+        if ($attempt->passed && $attempt->quiz->course) {
+            CourseProgress::for($attempt->user, $attempt->quiz->course)->recordCompletion();
+        }
+
+        $left = $attempt->needs_marking ? ' Still to mark in this test: '.$attempt->orderedQuestions()->filter(fn ($q) => $attempt->isRight($q) === null)->count().'.' : ' All marked: '.$attempt->percent.'%, '.($attempt->passed ? 'passed' : 'not passed').'.';
+
+        return redirect()->to(route('admin.results.show', $attempt).'#q'.$question->id)->with('status', 'Marked '.($data['right'] ? 'right' : 'wrong').'.'.$left);
     }
 
     /** Admin > Courses > a course > Results: the whole class on one page, one column per test. */
@@ -161,7 +180,7 @@ class ResultController extends Controller
             ->when($userIds !== null, fn ($q) => $q->whereIn('user_id', $userIds))->get();
         $attempts = QuizAttempt::whereIn('quiz_id', $tests->pluck('id'))->whereIn('user_id', $enrollments->pluck('user_id'))
             ->whereNotNull('submitted_at')->orderByDesc('percent')->orderBy('id')
-            ->get(['id', 'user_id', 'quiz_id', 'percent', 'passed'])
+            ->get(['id', 'user_id', 'quiz_id', 'percent', 'passed', 'needs_marking'])
             ->groupBy(['user_id', 'quiz_id']);
         $asked = RetakeRequest::pending()->whereIn('quiz_id', $tests->pluck('id'))->whereIn('user_id', $enrollments->pluck('user_id'))->pluck('user_id')->flip();
 
@@ -170,10 +189,10 @@ class ResultController extends Controller
             $scores = $tests->mapWithKeys(function ($test) use ($attempts, $enrollment) {
                 $tries = $attempts[$enrollment->user_id][$test->id] ?? collect();
 
-                return [$test->id => $tries->isEmpty() ? null : ['best' => $tries->first(), 'passed' => $tries->contains('passed', true), 'tries' => $tries->count()]];
+                return [$test->id => $tries->isEmpty() ? null : ['best' => $tries->first(), 'passed' => $tries->contains('passed', true), 'waiting' => $tries->contains('needs_marking', true), 'tries' => $tries->count()]];
             });
-            // A module quiz or final exam taken but not passed yet.
-            $retake = $tests->filter(fn ($test) => $test->isRequired() && $scores[$test->id] && ! $scores[$test->id]['passed'])->values();
+            // A module quiz or final exam taken but not passed yet (a try waiting for a teacher to mark it does not count against them).
+            $retake = $tests->filter(fn ($test) => $test->isRequired() && $scores[$test->id] && ! $scores[$test->id]['passed'] && ! $scores[$test->id]['waiting'])->values();
 
             return [
                 'enrollment' => $enrollment,
@@ -206,7 +225,8 @@ class ResultController extends Controller
             ->when($filters['quiz'] ?? null, fn ($q, $id) => $q->where('quiz_id', $id))
             ->when($filters['class'] ?? null, fn ($q, $id) => $q->whereIn('user_id', \App\Models\Classroom::studentIds((int) $id)))
             ->when(($filters['result'] ?? null) === 'passed', fn ($q) => $q->whereNotNull('submitted_at')->where('passed', true))
-            ->when(($filters['result'] ?? null) === 'failed', fn ($q) => $q->whereNotNull('submitted_at')->where('passed', false))
+            ->when(($filters['result'] ?? null) === 'failed', fn ($q) => $q->whereNotNull('submitted_at')->where('passed', false)->where('needs_marking', false))
+            ->when(($filters['result'] ?? null) === 'to_mark', fn ($q) => $q->whereNotNull('submitted_at')->where('needs_marking', true))
             ->when(($filters['result'] ?? null) === 'unfinished', fn ($q) => $q->whereNull('submitted_at'));
     }
 }

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * A question and its answers. How an answer is kept depends on the type:
  *  single, multiple, true_false - list of chosen option ids
- *  short    - the text typed; the options are the accepted answers
+ *  short    - the text typed (at most 255 characters); a teacher marks it right or wrong (QuizAttempt::mark)
  *  matching - [left option id => option id whose right side was picked]; option text = left, match_text = right
  *  ordering - option ids in the order the student put them; the options' position is the right order
  *  dragdrop - [blank number => option id]; the prompt has "___" for each blank, an option's slot is its blank
@@ -46,6 +46,12 @@ class QuizQuestion extends Model
     public function options(): HasMany
     {
         return $this->hasMany(QuizOption::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** Short answers have no answer key: a teacher reads and marks them. */
+    public function isMarkedByTeacher(): bool
+    {
+        return $this->type === 'short';
     }
 
     public function isChoice(): bool
@@ -87,7 +93,7 @@ class QuizQuestion extends Model
 
         switch ($this->type) {
             case 'short':
-                return mb_substr(trim((string) (is_array($raw) ? ($raw['text'] ?? '') : $raw)), 0, 500);
+                return mb_substr(trim((string) (is_array($raw) ? ($raw['text'] ?? '') : $raw)), 0, 255);
             case 'matching':
                 $out = [];
                 foreach ((array) $raw as $left => $right) {
@@ -125,6 +131,9 @@ class QuizQuestion extends Model
     /** All-or-nothing, for every type. */
     public function isAnsweredCorrectly(mixed $answer): bool
     {
+        if ($this->isMarkedByTeacher()) {
+            return false; // only the teacher's mark makes it right (QuizAttempt::isRight)
+        }
         if ($this->isChoice()) {
             $chosen = array_values(array_unique(array_map('intval', (array) $answer)));
             sort($chosen);
@@ -147,14 +156,6 @@ class QuizQuestion extends Model
         $byId = $options->keyBy(fn ($o) => (int) $o->id);
 
         switch ($this->type) {
-            case 'short':
-                $accepted = $options->pluck('text')->all();
-
-                return [[
-                    'key' => 'text', 'label' => null, 'given' => $this->hasAnswer($answer) ? (string) $answer : null,
-                    'correct' => implode(' / ', $accepted),
-                    'right' => collect($accepted)->contains(fn ($text) => self::sameText($text, (string) $answer)),
-                ]];
             case 'matching':
                 $answer = (array) $answer;
 
@@ -194,7 +195,7 @@ class QuizQuestion extends Model
     public function solutionText(): string
     {
         return match ($this->type) {
-            'short' => $this->options->pluck('text')->implode(' / '),
+            'short' => '',
             'matching' => $this->options->map(fn ($o) => $o->text.' → '.$o->match_text)->implode(' · '),
             'ordering' => $this->options->pluck('text')->implode(' → '),
             'dragdrop' => collect($this->reviewRows([]))->pluck('correct')->implode(' · '),

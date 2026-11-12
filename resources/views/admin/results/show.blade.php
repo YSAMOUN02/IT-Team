@@ -4,7 +4,8 @@
     $student = $attempt->user;
     $rightCount = $rows->where('right', true)->count();
     $unanswered = $rows->filter(fn ($row) => ! $row['question']->hasAnswer($row['chosen']))->count();
-    $wrongCount = $rows->count() - $rightCount - $unanswered;
+    $toMark = $rows->filter(fn ($row) => $row['right'] === null)->count();
+    $wrongCount = $rows->count() - $rightCount - $unanswered - $toMark;
     // Attempts saved before the 2026_11_01_000002 fix lost their real start time (it equals the submit time).
     $seconds = $attempt->isSubmitted() && $attempt->submitted_at->gt($attempt->started_at) ? (int) $attempt->started_at->diffInSeconds($attempt->submitted_at) : null;
 @endphp
@@ -56,18 +57,36 @@
             @else
                 <ol class="review-list">
                     @foreach ($rows as ['question' => $question, 'chosen' => $chosen, 'right' => $right])
-                        <li @class(['review-q', 'is-right' => $right, 'is-wrong' => ! $right]) data-review="{{ $right ? 'right' : 'wrong' }}">
+                        <li @class(['review-q', 'is-right' => $right, 'is-wrong' => $right === false, 'is-to-mark' => $right === null]) id="q{{ $question->id }}" data-review="{{ $right ? 'right' : 'wrong' }}">
                             <div class="review-q-head">
                                 <span class="q-num">{{ $loop->iteration }}</span>
                                 <span class="q-prompt">{!! nl2br(e($question->prompt)) !!}</span>
                                 @php($given = $question->hasAnswer($chosen))
-                                <span class="status {{ $right ? 'status-on' : ($given ? 'status-blocked' : 'status-off') }}">{{ $right ? 'Correct' : ($given ? 'Wrong' : 'Not answered') }}</span>
+                                <span class="status {{ $right ? 'status-on' : ($right === null ? 'status-sched' : ($given ? 'status-blocked' : 'status-off')) }}">{{ $right ? 'Correct' : ($right === null ? 'To mark' : ($given ? 'Wrong' : 'Not answered')) }}</span>
                             </div>
                             @if ($question->image)
                                 <img class="review-image" src="{{ media_url($question->image) }}" alt="">
                             @endif
-                            @unless ($question->isChoice())
-                                {{-- Short answer, matching, ordering, drag & drop: part by part. --}}
+                            @if ($question->isMarkedByTeacher())
+                                {{-- Short answer: the teacher reads it and marks it. --}}
+                                <div class="mark-box">
+                                    <div class="mark-answer"><small>Student's answer</small>{{ $given ? $chosen : '(no answer)' }}</div>
+                                    @if ($question->explanation)
+                                        <div class="mark-model"><small>Model answer</small>{{ $question->explanation }}</div>
+                                    @endif
+                                    @if ($given)
+                                        <form method="post" action="{{ route('admin.results.mark', $attempt) }}" class="mark-actions">
+                                            @csrf
+                                            <input type="hidden" name="question_id" value="{{ $question->id }}">
+                                            <button class="btn btn-sm {{ $right === true ? 'btn-primary' : 'btn-ghost' }}" name="right" value="1">@include('admin.partials.icon', ['name' => 'check']) Right</button>
+                                            <button class="btn btn-sm {{ $right === false ? 'btn-danger' : 'btn-ghost' }}" name="right" value="0">Wrong</button>
+                                            @if ($right !== null)<span class="help">Marked. Click the other button to change it.</span>@endif
+                                        </form>
+                                    @endif
+                                </div>
+                            @endif
+                            @unless ($question->isChoice() || $question->isMarkedByTeacher())
+                                {{-- Matching, ordering, drag & drop: part by part. --}}
                                 <table class="review-parts">
                                     <thead><tr><th>{{ ['matching' => 'Item', 'ordering' => 'Place', 'dragdrop' => 'Blank'][$question->type] ?? '' }}</th><th>Student's answer</th><th>Right answer</th></tr></thead>
                                     <tbody>

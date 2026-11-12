@@ -16,6 +16,8 @@ class QuizAttempt extends Model
     protected $casts = [
         'question_order' => 'array',
         'answers' => 'array',
+        'marks' => 'array',
+        'needs_marking' => 'boolean',
         'passed' => 'boolean',
         'started_at' => 'datetime',
         'submitted_at' => 'datetime',
@@ -59,34 +61,66 @@ class QuizAttempt extends Model
 
     /**
      * Grade and close the attempt. $answers = [question_id => answer]; the answer's shape depends on
-     * the question type (see QuizQuestion).
-     * Unanswered questions score zero.
+     * the question type (see QuizQuestion). Unanswered questions score zero; short answers wait for a teacher.
      */
     public function grade(array $answers): self
     {
-        $questions = $this->orderedQuestions();
         $clean = [];
-        $score = 0;
-        $max = 0;
+        foreach ($this->orderedQuestions() as $question) {
+            $clean[$question->id] = $question->normalizeAnswer($answers[$question->id] ?? null);
+        }
+        $this->answers = $clean;
+        $this->submitted_at = now();
 
-        foreach ($questions as $question) {
-            $chosen = $question->normalizeAnswer($answers[$question->id] ?? null);
-            $clean[$question->id] = $chosen;
-            $max += $question->points;
-            if ($question->isAnsweredCorrectly($chosen)) {
-                $score += $question->points;
+        return $this->rescore();
+    }
+
+    /** Right or wrong; for a short answer the teacher's mark, null while nobody has marked it (an empty one is wrong). */
+    public function isRight(QuizQuestion $question): ?bool
+    {
+        $answer = ($this->answers ?? [])[$question->id] ?? null;
+        if ($question->isMarkedByTeacher()) {
+            if (! $question->hasAnswer($answer)) {
+                return false;
             }
+            $mark = ($this->marks ?? [])[$question->id] ?? null;
+
+            return $mark === null ? null : (bool) $mark;
         }
 
+        return $question->isAnsweredCorrectly($answer);
+    }
+
+    /** A teacher marks one short answer right or wrong; the score and result follow. */
+    public function mark(QuizQuestion $question, bool $right): self
+    {
+        $marks = $this->marks ?? [];
+        $marks[$question->id] = $right;
+        $this->marks = $marks;
+
+        return $this->rescore();
+    }
+
+    /** Score, percent and result from the answers and marks. Not passed while anything waits to be marked. */
+    public function rescore(): self
+    {
+        $score = 0;
+        $max = 0;
+        $waiting = false;
+        foreach ($this->orderedQuestions() as $question) {
+            $max += $question->points;
+            $right = $this->isRight($question);
+            $waiting = $waiting || $right === null;
+            $score += $right ? $question->points : 0;
+        }
         $percent = $max ? (int) floor($score * 100 / $max) : 0;
 
         $this->fill([
-            'answers' => $clean,
             'score' => $score,
             'max_score' => $max,
             'percent' => $percent,
-            'passed' => $max > 0 && $percent >= $this->quiz->pass_percent,
-            'submitted_at' => now(),
+            'needs_marking' => $waiting,
+            'passed' => ! $waiting && $max > 0 && $percent >= $this->quiz->pass_percent,
         ])->save();
 
         return $this;

@@ -38,7 +38,7 @@ class QuestionTypesTest extends TestCase
         $this->actingAs($this->admin);
         $post = fn (array $data) => $this->post(route('admin.quizzes.questions.store', $quiz), $data + ['points' => 1])->assertSessionHasNoErrors();
 
-        $post(['type' => 'short', 'prompt' => 'Which function adds up a range?', 'options' => [['text' => 'SUM'], ['text' => '=SUM()'], ['text' => '']]]);
+        $post(['type' => 'short', 'prompt' => 'Why use a PivotTable?', 'explanation' => 'To summarise a large table quickly.', 'options' => [['text' => 'left over']]]);
         $post(['type' => 'matching', 'prompt' => 'Match the shortcut', 'options' => [
             ['text' => 'Ctrl + C', 'match' => 'Copy'], ['text' => 'Ctrl + V', 'match' => 'Paste'], ['text' => 'Ctrl + Z', 'match' => 'Undo'],
         ]]);
@@ -54,7 +54,7 @@ class QuestionTypesTest extends TestCase
     {
         $q = $this->makeQuestions();
 
-        $this->assertSame(['SUM', '=SUM()'], $q['short']->options->pluck('text')->all());
+        $this->assertSame([], $q['short']->options->all()); // no answer key: a teacher marks it
         $this->assertSame(['Copy', 'Paste', 'Undo'], $q['matching']->options->pluck('match_text')->all());
         $this->assertSame(['Select the data', 'Insert > PivotTable', 'Drag the fields'], $q['ordering']->options->pluck('text')->all());
         $this->assertSame([[1, true], [2, true], [null, false]], $q['dragdrop']->options->map(fn ($o) => [$o->slot, $o->is_correct])->all());
@@ -69,7 +69,6 @@ class QuestionTypesTest extends TestCase
         $this->get(route('admin.quizzes.questions.create', [$this->quiz, 'type' => 'dragdrop']))->assertOk()->assertSee('three underscores');
 
         $fails = [
-            ['short', 'Q', [['text' => '']], 'Add at least one accepted answer.'],
             ['matching', 'Q', [['text' => 'A', 'match' => '1'], ['text' => 'B', 'match' => '']], 'Fill in both sides of every pair.'],
             ['matching', 'Q', [['text' => 'A', 'match' => '1']], 'Add at least two pairs.'],
             ['ordering', 'Q', [['text' => 'Only one']], 'Add at least two items.'],
@@ -103,32 +102,48 @@ class QuestionTypesTest extends TestCase
             ->assertSee('name="answers['.$q['dragdrop']->id.'][2]"', false)
             ->assertSee(__('account.hint_dragdrop'));
 
-        // All right: capitals and spaces in the short answer do not matter, the extra word is not used.
+        // All right (the extra word is not used); the short answer waits for the teacher, and is cut at 255 characters.
         $this->post("$base/attempts/{$attempt->id}", ['answers' => [
-            $q['short']->id => '  sum ',
+            $q['short']->id => '  To summarise data. '.str_repeat('x', 300),
             $q['matching']->id => [$id('matching', 'Ctrl + C') => $id('matching', 'Copy', 'match_text'), $id('matching', 'Ctrl + V') => $id('matching', 'Paste', 'match_text'), $id('matching', 'Ctrl + Z') => $id('matching', 'Undo', 'match_text')],
             $q['ordering']->id => $q['ordering']->options->pluck('id')->all(),
             $q['dragdrop']->id => [1 => $id('dragdrop', 'SUM'), 2 => $id('dragdrop', 'COUNT')],
         ]])->assertRedirect();
         $attempt->refresh();
-        $this->assertSame([4, 4, true], [$attempt->score, $attempt->max_score, $attempt->passed]);
-        $this->get("$base/attempts/{$attempt->id}/result")->assertOk()->assertSee('review-part is-right', false)->assertDontSee('review-part is-wrong', false);
+        $this->assertSame(255, mb_strlen($attempt->answers[$q['short']->id]));
+        $this->assertSame([3, 4, false, true], [$attempt->score, $attempt->max_score, $attempt->passed, $attempt->needs_marking]);
+        $this->get("$base/attempts/{$attempt->id}/result")->assertOk()->assertSee(__('account.result_waiting'))->assertSee(__('account.waiting_mark'))
+            ->assertSee('review-part is-right', false)->assertDontSee('review-part is-wrong', false);
+
+        // The teacher marks it right: 4 out of 4, passed.
+        $this->actingAs($this->admin)->get(route('admin.results.index'))->assertSee('To mark');
+        $this->get(route('admin.results.index', ['result' => 'to_mark']))->assertSee(e(route('admin.results.show', $attempt)), false);
+        $this->get(route('admin.results.show', $attempt))->assertOk()->assertSee('To summarise data.')->assertSee('To summarise a large table quickly.')->assertSee('name="right" value="1"', false);
+        $this->post(route('admin.results.mark', $attempt), ['question_id' => $q['short']->id, 'right' => 1])
+            ->assertRedirect(route('admin.results.show', $attempt).'#q'.$q['short']->id)->assertSessionHas('status', 'Marked right. All marked: 100%, passed.');
+        $attempt->refresh();
+        $this->assertSame([4, true, false], [$attempt->score, $attempt->passed, $attempt->needs_marking]);
+        // Only short answers are marked by hand.
+        $this->post(route('admin.results.mark', $attempt), ['question_id' => $q['matching']->id, 'right' => 0])->assertNotFound();
+        $this->actingAs($student)->get("$base/attempts/{$attempt->id}/result")->assertDontSee(__('account.result_waiting'));
 
         // All wrong: shown part by part, the right answer beside the student's.
         $this->post("$base/start");
         $second = $this->quiz->attempts()->latest('id')->firstOrFail();
         $this->post("$base/attempts/{$second->id}", ['answers' => [
-            $q['short']->id => 'ADD',
+            $q['short']->id => 'No idea',
             $q['matching']->id => [$id('matching', 'Ctrl + C') => $id('matching', 'Paste', 'match_text'), $id('matching', 'Ctrl + V') => $id('matching', 'Copy', 'match_text'), $id('matching', 'Ctrl + Z') => $id('matching', 'Undo', 'match_text')],
             $q['ordering']->id => array_reverse($q['ordering']->options->pluck('id')->all()),
             $q['dragdrop']->id => [1 => $id('dragdrop', 'VLOOKUP'), 2 => $id('dragdrop', 'COUNT')],
         ]]);
+        $this->actingAs($this->admin)->post(route('admin.results.mark', $second), ['question_id' => $q['short']->id, 'right' => 0]);
         $second->refresh();
-        $this->assertSame([0, false], [$second->score, $second->passed]);
-        $page = $this->get("$base/attempts/{$second->id}/result")->assertOk();
-        $page->assertSee('ADD')->assertSee('SUM / =SUM()')->assertSee('VLOOKUP')->assertSee(__('account.place_n', ['n' => 3]));
-        // Wrong: the short answer, 2 pairs, 2 places (the middle one stayed put), 1 blank. Right: Ctrl + Z, the middle place, blank 2.
-        $this->assertSame([6, 3], [substr_count($page->getContent(), 'class="review-part is-wrong"'), substr_count($page->getContent(), 'class="review-part is-right"')]);
+        $this->assertSame([0, false, false], [$second->score, $second->passed, $second->needs_marking]);
+        $page = $this->actingAs($student)->get("$base/attempts/{$second->id}/result")->assertOk();
+        $page->assertSee('No idea')->assertSee('VLOOKUP')->assertSee(__('account.place_n', ['n' => 3]));
+        // Wrong: 2 pairs, 2 places (the middle one stayed put), 1 blank. Right: Ctrl + Z, the middle place, blank 2.
+        $this->assertSame([5, 3], [substr_count($page->getContent(), 'class="review-part is-wrong"'), substr_count($page->getContent(), 'class="review-part is-right"')]);
+        $page->assertSee('class="review-part review-written is-wrong"', false);
 
         // The teacher sees the same, part by part.
         $this->actingAs($this->admin)->get(route('admin.results.show', $second))->assertOk()->assertSee('class="review-parts"', false)->assertSee('Insert &gt; PivotTable', false);
@@ -160,8 +175,9 @@ class QuestionTypesTest extends TestCase
         Enrollment::grant($student, $this->course, null, 'manual');
         $check = fn ($question, $answer) => $this->actingAs($student)->postJson("/learn/{$this->course->slug}/quizzes/{$this->quiz->slug}/questions/{$question->id}/check", ['answer' => $answer])->assertOk();
 
-        $check($q['short'], 'Sum')->assertJson(['correct' => true, 'parts' => ['text' => true]]);
-        $check($q['short'], 'ADD')->assertJson(['correct' => false, 'solution' => 'SUM / =SUM()']);
+        // A short answer has no instant check: the page says the teacher marks it.
+        $start = $this->actingAs($student)->post("/learn/{$this->course->slug}/quizzes/{$this->quiz->slug}/start");
+        $this->get($start->headers->get('Location'))->assertOk()->assertSee(__('account.teacher_marks'));
 
         $ids = $q['ordering']->options->pluck('id')->all();
         $check($q['ordering'], [$ids[1], $ids[0], $ids[2]])->assertJson(['correct' => false, 'parts' => [false, false, true], 'solution' => 'Select the data → Insert > PivotTable → Drag the fields']);
@@ -171,6 +187,30 @@ class QuestionTypesTest extends TestCase
 
         $pairs = $q['matching']->options;
         $check($q['matching'], $pairs->mapWithKeys(fn ($o) => [$o->id => $o->id])->all())->assertJson(['correct' => true]);
+    }
+
+    public function test_a_try_waiting_for_the_teacher_is_not_a_fail(): void
+    {
+        $this->actingAs($this->admin)->post(route('admin.quizzes.questions.store', $this->quiz), ['type' => 'short', 'prompt' => 'Explain VLOOKUP', 'points' => 1]);
+        $question = $this->quiz->questions()->sole();
+        $student = User::factory()->create(['name' => 'Sok Dara']);
+        Enrollment::grant($student, $this->course, null, 'manual');
+        $base = "/learn/{$this->course->slug}/quizzes/{$this->quiz->slug}";
+        $this->actingAs($student)->post("$base/start");
+        $attempt = $this->quiz->attempts()->sole();
+        $this->post("$base/attempts/{$attempt->id}", ['answers' => [$question->id => 'It finds a value in a table.']]);
+
+        $this->assertTrue($attempt->fresh()->needs_marking);
+        $this->get($base)->assertSee(__('account.waiting_mark'))->assertDontSee(__('account.not_passed'));
+        // The teacher's pages: a red count in the sidebar, and no "needs to retake" for this course yet.
+        $book = \App\Http\Controllers\Admin\ResultController::gradebook($this->course);
+        $this->assertNotSame('retake', $book['rows']->sole()['status']);
+        $this->actingAs($this->admin)->get(route('admin.dashboard'))->assertSee('<b class="nav-badge" title="Unread">1</b>', false);
+        // An empty short answer needs no marking: it is simply wrong.
+        $this->actingAs($student)->post("$base/start");
+        $empty = $this->quiz->attempts()->latest('id')->first();
+        $this->post("$base/attempts/{$empty->id}", ['answers' => [$question->id => '   ']]);
+        $this->assertSame([false, 0], [$empty->fresh()->needs_marking, $empty->fresh()->score]);
     }
 
     public function test_copying_a_course_keeps_pairs_and_blanks(): void

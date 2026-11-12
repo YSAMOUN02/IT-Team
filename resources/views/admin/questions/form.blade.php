@@ -12,7 +12,6 @@
     $kinds = [
         'single' => ['Answers', 'tick the one correct answer', 'Answer'],
         'multiple' => ['Answers', 'tick every correct answer', 'Answer'],
-        'short' => ['Accepted answers', 'any of these counts as right; capital letters and extra spaces do not matter', 'Accepted answer'],
         'matching' => ['Pairs', 'students match each left item with its right item, shuffled', 'Left item'],
         'ordering' => ['Items, in the right order', 'students see them shuffled and put them back in this order', 'Step'],
         'dragdrop' => ['Words', 'give each word the number of its blank; a word with no number is an extra that fits nowhere', 'Word'],
@@ -51,7 +50,12 @@
                         @include('admin.fields.textarea', ['name' => 'prompt', 'label' => 'Question', 'value' => $question->prompt, 'rows' => 3, 'required' => true])
                         <p class="help qtype-note" data-for="dragdrop">Write <code>___</code> (three underscores) where each blank goes, e.g. <code>Use ___ to add up a range, and ___ to count it.</code> The blanks are numbered 1, 2, 3… from the left.</p>
 
-                        <div class="field" data-answers="list" @if ($type === 'true_false') hidden @endif>
+                        <div class="alert alert-info qtype-note" data-for="short">
+                            @include('admin.partials.icon', ['name' => 'edit'])
+                            <div>Students type an answer of up to 255 characters. There is no answer key: you mark each answer <b>Right</b> or <b>Wrong</b> in <b>Exam results</b>, and the score updates then. Put a model answer in <b>Explanation</b> to help whoever marks.</div>
+                        </div>
+
+                        <div class="field" data-answers="list" @if (in_array($type, ['true_false', 'short'], true)) hidden @endif>
                             <span class="field-label"><span>
                                 @foreach ($kinds as $kind => [$title, $hint])
                                     <span data-for="{{ $kind }}">{{ $title }} <small class="muted">· {{ $hint }}</small></span>
@@ -94,7 +98,7 @@
                             </div>
                         </div>
 
-                        @include('admin.fields.textarea', ['name' => 'explanation', 'label' => 'Explanation', 'value' => $question->explanation, 'rows' => 3, 'help' => 'Shown after answering (practice) or in the review. Explain why the answer is right.'])
+                        @include('admin.fields.textarea', ['name' => 'explanation', 'label' => 'Explanation', 'value' => $question->explanation, 'rows' => 3, 'help' => 'Shown after answering (practice) or in the review. Explain why the answer is right. For a short answer: the model answer, shown to the marker too.'])
                     </div>
                 </section>
             </div>
@@ -127,7 +131,7 @@
     // Show the fields this type uses; number the placeholders ("Step 1", "Word 2"…).
     const sync = () => {
         const t = type();
-        document.querySelector('[data-answers="list"]').hidden = t === 'true_false';
+        document.querySelector('[data-answers="list"]').hidden = t === 'true_false' || t === 'short';
         document.querySelector('[data-answers="true_false"]').hidden = t !== 'true_false';
         document.querySelectorAll('[data-for]').forEach((el) => { el.hidden = !el.dataset.for.split(' ').includes(t); });
         rows.querySelectorAll('[data-text]').forEach((input, i) => {

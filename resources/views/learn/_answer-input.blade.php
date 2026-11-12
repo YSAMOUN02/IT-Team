@@ -6,8 +6,9 @@
 @switch ($question->type)
     @case('short')
         <div class="q-short" data-part="text">
-            <input type="text" name="answers[{{ $qid }}]" maxlength="500" autocomplete="off" spellcheck="false"
-                   placeholder="{{ __('account.answer_placeholder') }}" aria-label="{{ __('account.answer_placeholder') }}">
+            <textarea name="answers[{{ $qid }}]" maxlength="255" rows="3" autocomplete="off" data-chars-template="{{ __('account.chars_left', ['count' => ':count']) }}"
+                      placeholder="{{ __('account.answer_placeholder') }}" aria-label="{{ __('account.answer_placeholder') }}"></textarea>
+            <small class="q-short-count" data-chars aria-live="polite">{{ __('account.chars_left', ['count' => 255]) }}</small>
         </div>
         @break
 

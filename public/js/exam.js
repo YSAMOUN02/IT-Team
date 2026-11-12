@@ -21,7 +21,7 @@
     // Answered: a choice ticked, text typed, every list picked, every blank filled, or the order touched.
     const isAnswered = (q) => {
         switch (type(q)) {
-            case 'short': return q.querySelector('.q-short input').value.trim() !== '';
+            case 'short': return q.querySelector('.q-short textarea').value.trim() !== '';
             case 'matching':
             case 'dragdrop': return Array.from(q.querySelectorAll('select')).every((s) => s.value !== '');
             case 'ordering': return q.dataset.touched === '1';
@@ -32,7 +32,7 @@
     // The answer as the server wants it (also what is kept across a reload).
     const answerOf = (q) => {
         switch (type(q)) {
-            case 'short': return q.querySelector('.q-short input').value;
+            case 'short': return q.querySelector('.q-short textarea').value;
             case 'matching':
             case 'dragdrop': {
                 const out = {};
@@ -58,7 +58,7 @@
             if (!q || saved == null) return;
             const value = Array.isArray(saved) ? saved : saved.a; // older pages kept a plain list
             switch (type(q)) {
-                case 'short': q.querySelector('.q-short input').value = value || ''; break;
+                case 'short': q.querySelector('.q-short textarea').value = value || ''; break;
                 case 'matching':
                 case 'dragdrop':
                     Object.entries(value || {}).forEach(([key, v]) => {
@@ -256,7 +256,16 @@
         }
     };
     form.addEventListener('change', onEdit);
-    form.addEventListener('input', (e) => { if (e.target.closest('.q-short')) onEdit(e); });
+    // Short answers: how many of the 255 characters are left.
+    const countChars = (box) => {
+        const area = box.querySelector('textarea');
+        const left = area.maxLength - area.value.length;
+        const out = box.querySelector('[data-chars]');
+        out.textContent = area.dataset.charsTemplate.replace(':count', left);
+        out.classList.toggle('is-low', left <= 20);
+    };
+    form.querySelectorAll('.q-short').forEach(countChars);
+    form.addEventListener('input', (e) => { const box = e.target.closest('.q-short'); if (box) { countChars(box); onEdit(e); } });
 
     // Highlight the chip of the question on screen; keep it visible in the chip row.
     if ('IntersectionObserver' in window) {

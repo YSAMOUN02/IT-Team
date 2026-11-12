@@ -28,7 +28,11 @@
         @if ($best)
             <p class="best-score">
                 {{ __('account.best_score') }}: <strong>{{ $best->percent }}%</strong>
-                <span class="pill {{ $best->passed ? 'pill-paid' : 'pill-failed' }}">{{ $best->passed ? __('account.passed') : __('account.not_passed') }}</span>
+                @if ($attempts->contains('needs_marking', true) && ! $attempts->contains('passed', true))
+                    <span class="pill pill-pending">{{ __('account.waiting_mark') }}</span>
+                @else
+                    <span class="pill {{ $best->passed ? 'pill-paid' : 'pill-failed' }}">{{ $best->passed ? __('account.passed') : __('account.not_passed') }}</span>
+                @endif
             </p>
         @endif
 
@@ -63,7 +67,7 @@
                     <tr>
                         <td>{{ $attempt->submitted_at->format('d/m/Y H:i') }}</td>
                         <td><strong>{{ $attempt->percent }}%</strong> <small>({{ $attempt->score }}/{{ $attempt->max_score }})</small></td>
-                        <td><span class="pill {{ $attempt->passed ? 'pill-paid' : 'pill-failed' }}">{{ $attempt->passed ? __('account.passed') : __('account.not_passed') }}</span></td>
+                        <td><span class="pill {{ $attempt->passed ? 'pill-paid' : ($attempt->needs_marking ? 'pill-pending' : 'pill-failed') }}">{{ $attempt->passed ? __('account.passed') : ($attempt->needs_marking ? __('account.waiting_mark') : __('account.not_passed')) }}</span></td>
                         <td><a href="{{ route('learn.result', [$course->slug, $quiz->slug, $attempt]) }}">{{ __('account.review_answers') }} →</a></td>
                     </tr>
                 @endforeach

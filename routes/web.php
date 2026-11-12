@@ -241,6 +241,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('students/{user}/sign-out', [Admin\StudentController::class, 'signOut'])->name('students.sign-out');
         Route::get('results', [Admin\ResultController::class, 'index'])->name('results.index');
         Route::get('results/{attempt}', [Admin\ResultController::class, 'show'])->name('results.show');
+        Route::post('results/{attempt}/mark', [Admin\ResultController::class, 'mark'])->name('results.mark');
         Route::post('results/{attempt}/extra-try', [Admin\RetakeRequestController::class, 'give'])->name('results.extra-try');
         Route::get('retake-requests', [Admin\RetakeRequestController::class, 'index'])->name('retake-requests.index');
         Route::patch('retake-requests/{retakeRequest}', [Admin\RetakeRequestController::class, 'decide'])->name('retake-requests.decide');

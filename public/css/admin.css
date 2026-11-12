@@ -1019,3 +1019,10 @@ a.kpi:hover { border-color: #cfd0f5; }
 .qtype-note { margin-top: -6px; }
 .qtype-note code { padding: 1px 6px; border-radius: 5px; background: var(--bg); font-family: var(--mono); }
 .add-question-types { justify-content: flex-end; max-width: 640px; }
+/* Marking a short answer. */
+.review-q.is-to-mark { border-left: 3px solid #e3a008; }
+.mark-box { display: grid; gap: 10px; margin: 8px 0 4px; }
+.mark-answer, .mark-model { padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 14.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mark-model { background: var(--bg); color: var(--text-2); }
+.mark-answer small, .mark-model small { display: block; margin-bottom: 4px; font: 600 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.mark-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

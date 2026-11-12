@@ -93,6 +93,7 @@ class AppServiceProvider extends ServiceProvider
                 'students' => User::where('role', 'student')->count(),
                 'classes' => \App\Models\Classroom::count(),
                 'retakes' => \App\Models\RetakeRequest::pending()->count(),
+                'to_mark' => \App\Models\QuizAttempt::whereNotNull('submitted_at')->where('needs_marking', true)->whereHas('user', fn ($q) => $q->where('role', 'student'))->count(),
             ]);
         });
     }

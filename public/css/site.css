@@ -1344,8 +1344,8 @@ ins.adsbygoogle[data-ad-status="unfilled"] { display: none !important; }
 }
 
 /* More question types: short answer, matching, ordering, drag & drop. */
-.q-short input { width: 100%; min-height: 50px; padding: 12px 16px; border: 1.5px solid var(--line); border-radius: 12px; font: 16px var(--font); color: var(--ink); background: #fff; transition: border-color .15s, box-shadow .15s; }
-.q-short input:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 4px var(--accent-soft); }
+.q-short textarea { width: 100%; min-height: 50px; padding: 12px 16px; border: 1.5px solid var(--line); border-radius: 12px; font: 16px var(--font); color: var(--ink); background: #fff; transition: border-color .15s, box-shadow .15s; }
+.q-short textarea:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 4px var(--accent-soft); }
 .q-match { display: grid; gap: 8px; }
 .q-match-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; }
 .q-match-left { font-weight: 600; }
@@ -1375,8 +1375,8 @@ ins.adsbygoogle[data-ad-status="unfilled"] { display: none !important; }
 .q-chip.is-lifted { opacity: .35; }
 .q-chip-ghost { position: fixed; left: 0; top: 0; z-index: 90; pointer-events: none; border-color: var(--accent-2); box-shadow: var(--shadow-lg); }
 /* Practice check: right / wrong part by part. */
-.q-match-row.is-right, .q-order-item.is-right, .q-short.is-right input { border-color: #31a46a; background: #effaf3; }
-.q-match-row.is-wrong, .q-order-item.is-wrong, .q-short.is-wrong input { border-color: #e2564a; background: #fdf0ee; }
+.q-match-row.is-right, .q-order-item.is-right, .q-short.is-right textarea { border-color: #31a46a; background: #effaf3; }
+.q-match-row.is-wrong, .q-order-item.is-wrong, .q-short.is-wrong textarea { border-color: #e2564a; background: #fdf0ee; }
 .q-blank.is-right .q-slot { border-color: #31a46a; background: #effaf3; color: #0b6b3c; }
 .q-blank.is-wrong .q-slot { border-color: #e2564a; background: #fdf0ee; color: #a52714; }
 /* Result review, part by part. */
@@ -1391,3 +1391,10 @@ ins.adsbygoogle[data-ad-status="unfilled"] { display: none !important; }
     .q-match-arrow { display: none; }
     .review-part { grid-template-columns: 1fr; }
 }
+.q-short textarea { display: block; min-height: 90px; resize: vertical; line-height: 1.6; }
+.q-short-count { display: block; margin-top: 6px; text-align: right; font-size: 12.5px; color: var(--ink-3); }
+.q-short-count.is-low { color: #c22845; font-weight: 600; }
+.q-teacher-note { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; background: var(--tint); color: var(--ink-2); font-size: 14px; }
+.result-card.is-waiting .ring { --ring: #c58a00; }
+.question.review.is-waiting { border-left: 4px solid #f0b429; }
+.review-written { grid-template-columns: 1fr; }

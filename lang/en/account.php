@@ -388,7 +388,7 @@ return [
     'chat_email_link' => 'Open the chat',
 
     // More question types
-    'hint_short' => 'Type your answer.',
+    'hint_short' => 'Type your answer (up to 255 characters). Your teacher marks it.',
     'hint_matching' => 'Match each item on the left with one on the right.',
     'hint_ordering' => 'Put the items in the right order: drag them, or use the arrows.',
     'hint_dragdrop' => 'Drag each word into its blank, or tap a word and then a blank.',
@@ -402,4 +402,8 @@ return [
     'clear_blank' => 'Tap to empty this blank',
     'right_answer_is' => 'The right answer',
     'place_n' => 'Place :n',
+    'result_waiting' => 'Your teacher is marking your written answers. Your result shows here once that is done.',
+    'waiting_mark' => 'Waiting for the teacher',
+    'teacher_marks' => 'Your teacher marks this answer after you submit the test.',
+    'chars_left' => ':count characters left',
 ];

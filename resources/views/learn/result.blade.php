@@ -7,11 +7,14 @@
     $rows = $questions->map(function ($question) use ($attempt) {
         $chosen = $attempt->answers[$question->id] ?? [];
 
-        return ['question' => $question, 'chosen' => $chosen, 'right' => $question->isAnsweredCorrectly($chosen)];
+        // right: true / false, or null for a short answer the teacher has not marked yet
+        return ['question' => $question, 'chosen' => $chosen, 'right' => $attempt->isRight($question)];
     });
     $rightCount = $rows->where('right', true)->count();
     $unanswered = $rows->filter(fn ($row) => ! $row['question']->hasAnswer($row['chosen']))->count();
-    $wrongCount = $rows->count() - $rightCount - $unanswered;
+    $waitingCount = $rows->filter(fn ($row) => $row['right'] === null)->count();
+    $wrongCount = $rows->count() - $rightCount - $unanswered - $waitingCount;
+    $waiting = $attempt->needs_marking;
     // Attempts saved before the 2026_11_01_000002 fix lost their real start time (it equals the submit time): no time shown.
     $seconds = $attempt->started_at && $attempt->submitted_at?->gt($attempt->started_at) ? (int) $attempt->started_at->diffInSeconds($attempt->submitted_at) : null;
     $practice = $quiz->isPractice();
@@ -22,7 +25,7 @@
 @section('content')
     <section class="section result-page">
         <div class="container narrow">
-            <div @class(['card', 'result-card', 'is-pass' => $attempt->passed, 'is-fail' => ! $attempt->passed, 'is-practice' => $practice]) @if ($celebrate) data-confetti @endif>
+            <div @class(['card', 'result-card', 'is-pass' => $attempt->passed, 'is-fail' => ! $attempt->passed && ! $waiting, 'is-waiting' => $waiting, 'is-practice' => $practice]) @if ($celebrate) data-confetti @endif>
                 <p class="eyebrow"><em class="tag tag-{{ $quiz->type }}">{{ $quiz->typeLabel() }}</em> {{ $course->title }}</p>
                 <h1>{{ $quiz->title }}</h1>
 
@@ -30,14 +33,18 @@
                     <span><b data-count="{{ $attempt->percent }}">{{ $attempt->percent }}</b>%</span>
                 </div>
                 <p class="result-verdict">
-                    @if ($practice)
+                    @if ($waiting)
+                        {{ __('account.waiting_mark') }}
+                    @elseif ($practice)
                         {{ __('account.result_practice') }}
                     @else
                         {{ $attempt->passed ? __('account.result_great') : __('account.not_passed') }}
                     @endif
                 </p>
                 <p class="muted">{{ __('account.score') }}: {{ $attempt->score }}/{{ $attempt->max_score }} · {{ __('account.pass_mark', ['percent' => $quiz->pass_percent]) }}</p>
-                @if (! $attempt->passed && ! $practice)
+                @if ($waiting)
+                    <p class="result-encourage">{{ __('account.result_waiting') }}</p>
+                @elseif (! $attempt->passed && ! $practice)
                     <p class="result-encourage">{{ __('account.result_try_again') }}</p>
                 @endif
 
@@ -87,17 +94,22 @@
                     </div>
                 </div>
                 @foreach ($rows as $i => ['question' => $question, 'chosen' => $chosen, 'right' => $right])
-                    <div @class(['card', 'question', 'review', 'is-right' => $right, 'is-wrong' => ! $right]) data-review="{{ $right ? 'right' : 'wrong' }}">
+                    <div @class(['card', 'question', 'review', 'is-right' => $right, 'is-wrong' => $right === false, 'is-waiting' => $right === null]) data-review="{{ $right ? 'right' : ($right === null ? 'waiting' : 'wrong') }}">
                         <p class="q-head">
                             <span class="q-num">{{ $i + 1 }}</span>
                             <span class="q-prompt">{!! nl2br(e($question->prompt)) !!}</span>
-                            <span class="pill {{ $right ? 'pill-paid' : 'pill-failed' }}">{{ $right ? __('account.correct') : ($question->hasAnswer($chosen) ? __('account.incorrect') : __('account.unanswered')) }}</span>
+                            <span class="pill {{ $right ? 'pill-paid' : ($right === null ? 'pill-pending' : 'pill-failed') }}">{{ $right ? __('account.correct') : ($right === null ? __('account.waiting_mark') : ($question->hasAnswer($chosen) ? __('account.incorrect') : __('account.unanswered'))) }}</span>
                         </p>
                         @if ($question->image)
                             <img class="q-image" src="{{ media_url($question->image) }}" alt="">
                         @endif
-                        @unless ($question->isChoice())
-                            {{-- Short answer, matching, ordering, drag & drop: part by part --}}
+                        @if ($question->isMarkedByTeacher())
+                            <div @class(['review-part', 'review-written', 'is-right' => $right, 'is-wrong' => $right === false])>
+                                <span><small>{{ __('account.your_answer') }}</small>{{ $question->hasAnswer($chosen) ? $chosen : '—' }}</span>
+                            </div>
+                        @endif
+                        @unless ($question->isChoice() || $question->isMarkedByTeacher())
+                            {{-- Matching, ordering, drag & drop: part by part --}}
                             <div class="review-parts">
                                 @foreach ($question->reviewRows($chosen) as $part)
                                     <div @class(['review-part', 'is-right' => $part['right'], 'is-wrong' => ! $part['right']])>
