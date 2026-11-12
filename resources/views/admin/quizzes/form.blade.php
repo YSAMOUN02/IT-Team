@@ -119,7 +119,10 @@
         <section class="card" style="margin-top:20px">
             <div class="card-head">
                 <div><h2>Questions</h2><p>{{ $quiz->questions->count() }} questions · {{ $quiz->questions->sum('points') }} points</p></div>
-                <div class="page-actions">
+                <div class="page-actions add-question-types">
+                    @foreach (['short' => 'Short answer', 'matching' => 'Matching', 'ordering' => 'Ordering', 'dragdrop' => 'Drag & drop'] as $newType => $newLabel)
+                        <a class="btn btn-ghost btn-sm" href="{{ route('admin.quizzes.questions.create', [$quiz, 'type' => $newType]) }}">@include('admin.partials.icon', ['name' => 'plus']) {{ $newLabel }}</a>
+                    @endforeach
                     <a class="btn btn-ghost btn-sm" href="{{ route('admin.quizzes.questions.create', [$quiz, 'type' => 'true_false']) }}">@include('admin.partials.icon', ['name' => 'plus']) True / False</a>
                     <a class="btn btn-ghost btn-sm" href="{{ route('admin.quizzes.questions.create', [$quiz, 'type' => 'multiple']) }}">@include('admin.partials.icon', ['name' => 'plus']) Several answers</a>
                     <a class="btn btn-primary btn-sm" href="{{ route('admin.quizzes.questions.create', [$quiz, 'type' => 'single']) }}">@include('admin.partials.icon', ['name' => 'plus']) Question</a>

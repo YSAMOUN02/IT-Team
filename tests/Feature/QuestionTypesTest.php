@@ -61,6 +61,11 @@ class QuestionTypesTest extends TestCase
         $this->assertSame(2, $q['dragdrop']->blankCount());
 
         $this->get(route('admin.questions.edit', $q['matching']))->assertOk()->assertSee('value="Paste"', false);
+        // The test's page offers a button for every type.
+        $page = $this->get(route('admin.quizzes.edit', $this->quiz))->assertOk();
+        foreach (['short', 'matching', 'ordering', 'dragdrop'] as $type) {
+            $page->assertSee(e(route('admin.quizzes.questions.create', [$this->quiz, 'type' => $type])), false);
+        }
         $this->get(route('admin.quizzes.questions.create', [$this->quiz, 'type' => 'dragdrop']))->assertOk()->assertSee('three underscores');
 
         $fails = [

@@ -1018,3 +1018,4 @@ a.kpi:hover { border-color: #cfd0f5; }
 .option-row [hidden] { display: none !important; }
 .qtype-note { margin-top: -6px; }
 .qtype-note code { padding: 1px 6px; border-radius: 5px; background: var(--bg); font-family: var(--mono); }
+.add-question-types { justify-content: flex-end; max-width: 640px; }
