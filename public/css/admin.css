@@ -1014,7 +1014,8 @@ a.kpi:hover { border-color: #cfd0f5; }
 .qtype-pick { display: flex; flex-wrap: wrap; }
 .option-move { display: inline-flex; gap: 2px; }
 .option-arrow { color: var(--text-3); font-weight: 700; }
-.option-row select.option-slot { min-height: 40px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); font: inherit; }
+.option-row select.option-slot { width: 9.5em; flex: none; min-height: 40px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); font: inherit; }
+.option-row input[type=text] { min-width: 8em; }
 .option-row [hidden] { display: none !important; }
 .qtype-note { margin-top: -6px; }
 .qtype-note code { padding: 1px 6px; border-radius: 5px; background: var(--bg); font-family: var(--mono); }
